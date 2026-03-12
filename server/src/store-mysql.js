@@ -8,6 +8,7 @@ const {
   Bill,
   Investment,
   OtpVerification,
+  Registration,
 } = require("./models");
 
 const HIGH_VALUE_OTP_THRESHOLD = 1000;
@@ -445,6 +446,14 @@ async function registerUser({ fullName, mobile, email, password }) {
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
+
+  await Registration.create({
+    fullName,
+    mobile,
+    email: email.toLowerCase(),
+    password: passwordHash,
+  });
+
   const customer = await Customer.create({
     fullName,
     mobile,
