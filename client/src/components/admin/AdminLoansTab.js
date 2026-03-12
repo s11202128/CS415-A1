@@ -13,9 +13,9 @@ export default function AdminLoansTab({ loanApplications, onAdminUpdateLoanStatu
           </tr>
         </thead>
         <tbody>
-          {loanApplications.map((loan) => (
+          {loanApplications.map((loan, index) => (
             <tr key={loan.id}>
-              <td>{loan.id}</td>
+              <td>{index + 1}</td>
               <td>{loan.customerId}</td>
               <td>FJD {Number(loan.requestedAmount || 0).toFixed(2)}</td>
               <td>{loan.status}</td>

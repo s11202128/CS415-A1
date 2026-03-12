@@ -453,9 +453,306 @@ td {
   align-self: end;
 }
 
+.loan-form-horizontal {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.loan-form-horizontal button {
+  grid-column: span 2;
+}
+
+/* ── Accounts Tab Styles ────────────────────────────────────────────── */
+.account-summary {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: #f0fdf4;
+  border-radius: 8px;
+  border-left: 4px solid #15803d;
+}
+
+.summary-item .label {
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.summary-item .value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.summary-item .value.highlight {
+  color: #15803d;
+  font-size: 1.3rem;
+}
+
+.primary-btn {
+  background: #0ea5e9;
+  border: 1px solid #06b6d4;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.primary-btn:hover {
+  background: #0284c7;
+}
+
+.success-btn {
+  background: #15803d;
+  border: 1px solid #22c55e;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.success-btn:hover {
+  background: #16a34a;
+}
+
+.account-row {
+  transition: background-color 0.2s;
+}
+
+.account-row:hover {
+  background-color: #f0fdf4;
+}
+
+.account-number {
+  font-family: monospace;
+  font-weight: 600;
+  color: #0f766e;
+}
+
+.balance {
+  font-size: 1.05rem;
+  color: #15803d;
+}
+
+.fee-interest {
+  font-size: 0.88rem;
+  color: #475569;
+}
+
+.fee-interest p {
+  margin: 4px 0;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-badge.status-active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.status-frozen {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.status-badge.status-suspended {
+  background: #fef08a;
+  color: #78350f;
+}
+
+.date {
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.account-types-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 10px 0;
+}
+
+.account-type-card {
+  background: #f0fdf4;
+  border: 1px solid #15803d;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.account-type-card h3 {
+  margin-top: 0;
+  color: #15803d;
+  font-size: 1rem;
+  border-bottom: 2px solid #22c55e;
+  padding-bottom: 8px;
+}
+
+.account-type-card .description {
+  font-size: 0.9rem;
+  color: #475569;
+  margin: 8px 0;
+}
+
+.account-type-card dl {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 0.88rem;
+}
+
+.account-type-card dt {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.account-type-card dd {
+  margin-left: 0;
+  color: #475569;
+  padding-left: 12px;
+}
+
+.tips-list {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.tips-list li {
+  color: #475569;
+  line-height: 1.4;
+}
+
+.tips-list li strong {
+  color: #0f172a;
+}
+
+.no-data {
+  text-align: center;
+  color: #64748b;
+  padding: 20px 0;
+  font-style: italic;
+}
+
+/* ── Statement Filtering Styles ─────────────────────────────────────── */
+.statement-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, #e0f2fe, #f0f9ff);
+  border: 1px solid #0ea5e9;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.summary-card strong {
+  display: block;
+  color: #0f172a;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.tx-credit {
+  background-color: #f0fdf4 !important;
+}
+
+.tx-debit {
+  background-color: #fef2f2 !important;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-credit {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-debit {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.amount-credit {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.amount-debit {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.notification-item {
+  background: #f0fdf4;
+  border-left: 4px solid #0ea5e9;
+  padding: 10px;
+  border-radius: 6px;
+  margin: 6px 0;
+}
+
+.notification-item strong {
+  display: block;
+  color: #0f766e;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.notification-item p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.notification-count {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
 @media (max-width: 980px) {
   .review-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .statement-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .account-types-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -467,4 +764,159 @@ td {
   .admin-form {
     grid-template-columns: 1fr;
   }
+
+  .loan-form-horizontal {
+    grid-template-columns: 1fr;
+  }
+
+  .loan-form-horizontal button {
+    grid-column: span 1;
+  }
+
+  .statement-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Compliance Tab Styles ──────────────────────────────────────────── */
+.tax-info {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.tax-rule {
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #78350f;
+}
+
+.tax-rule strong {
+  display: block;
+  color: #92400e;
+  margin-bottom: 3px;
+}
+
+.summary-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.summary-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f0f9ff;
+  border: 1px solid #0ea5e9;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.stat-label {
+  font-size: 0.88rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.stat-value.text-warning {
+  color: #f59e0b;
+}
+
+.stat-value.text-success {
+  color: #15803d;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.summary-row {
+  border-top: 1px solid #e2e8f0;
+  transition: background-color 0.2s;
+}
+
+.summary-row:hover {
+  background-color: #f8fafc;
+}
+
+.monospace {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #0f766e;
+  font-weight: 600;
+}
+
+.customer-name {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.amount {
+  text-align: right;
+  font-weight: 600;
+}
+
+.amount.warning {
+  color: #f59e0b;
+}
+
+.amount.success {
+  color: #15803d;
+}
+
+.small {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.status-submitted {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.compliance-guide {
+  display: grid;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.guide-section {
+  border-left: 4px solid #0f766e;
+  padding-left: 16px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.guide-section h3 {
+  margin: 0 0 10px;
+  color: #0f766e;
+  font-size: 1rem;
+}
+
+.guide-section ul {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+}
+
+.guide-section li {
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.guide-section strong {
+  color: #0f172a;
+  font-weight: 600;
 }

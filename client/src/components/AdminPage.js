@@ -72,7 +72,6 @@ export default function AdminPage({
       )}
       {activeSection === "Accounts" && (
         <AdminAccountsTab
-          customers={customers}
           accounts={accounts}
           adminAccountForm={adminAccountForm}
           setAdminAccountForm={setAdminAccountForm}

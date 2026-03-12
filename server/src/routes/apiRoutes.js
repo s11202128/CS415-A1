@@ -131,8 +131,9 @@ router.get("/accounts", asyncHandler(async (req, res) => {
 router.post("/accounts", asyncHandler(async (req, res) => {
   const payload = req.body || {};
   const providedAccountNumber = String(payload.accountNumber || "").trim();
-  if (!payload.customerId || !payload.type) {
-    return res.status(400).json({ error: "customerId and type are required" });
+  const providedCustomerName = String(payload.customerName || "").trim();
+  if (!payload.type) {
+    return res.status(400).json({ error: "type is required" });
   }
   if (!["Simple Access", "Savings"].includes(payload.type)) {
     return res.status(400).json({ error: "type must be Simple Access or Savings" });
@@ -141,8 +142,51 @@ router.post("/accounts", asyncHandler(async (req, res) => {
     return res.status(400).json({ error: "Reenter 12 digit number" });
   }
 
+  let customerId = payload.customerId;
+  if (customerId !== undefined && customerId !== null && customerId !== "") {
+    const numericCustomerId = Number(customerId);
+    if (!Number.isFinite(numericCustomerId) || numericCustomerId <= 0) {
+      return res.status(400).json({ error: "customerId must be a positive number" });
+    }
+    customerId = numericCustomerId;
+  } else {
+    if (!providedCustomerName) {
+      return res.status(400).json({ error: "customerName is required when customerId is not provided" });
+    }
+
+    const normalizedName = providedCustomerName.toLowerCase();
+    let customer = await Customer.findOne({
+      where: Customer.sequelize.where(
+        Customer.sequelize.fn("LOWER", Customer.sequelize.col("fullName")),
+        normalizedName
+      ),
+    });
+
+    if (!customer) {
+      const nonce = Date.now();
+      const safeName = providedCustomerName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ".")
+        .replace(/^\.+|\.+$/g, "") || "customer";
+
+      customer = await Customer.create({
+        fullName: providedCustomerName,
+        mobile: `+6799${String(nonce).slice(-6)}`,
+        email: `${safeName}.${nonce}@autocreated.local`,
+        password: "temporary-password",
+        status: "active",
+        tin: "",
+        residencyStatus: "resident",
+        identityVerified: false,
+        registrationStatus: "approved",
+      });
+    }
+
+    customerId = customer.id;
+  }
+
   const account = await Account.create({
-    customerId: payload.customerId,
+    customerId,
     accountNumber: providedAccountNumber || await generateRandomAccountNumber(),
     accountType: payload.type,
     balance: Number(payload.openingBalance || 0),
@@ -541,6 +585,8 @@ router.post("/loan-applications", asyncHandler(async (req, res) => {
 
   const loan = await Loan.create({
     customerId: payload.customerId,
+    loanProductId: payload.loanProductId,
+    termMonths: Number(payload.termMonths),
     loanType: product.name,
     principal: Number(payload.requestedAmount),
     interestRate: Number((product.annualRate * 100).toFixed(2)),
@@ -552,9 +598,9 @@ router.post("/loan-applications", asyncHandler(async (req, res) => {
   const row = {
     id: loan.id,
     customerId: loan.customerId,
-    loanProductId: payload.loanProductId,
+    loanProductId: loan.loanProductId,
     requestedAmount: Number(loan.principal),
-    termMonths: Number(payload.termMonths),
+    termMonths: Number(loan.termMonths),
     purpose: payload.purpose,
     monthlyIncome: Number(payload.monthlyIncome || 0),
     employmentStatus: payload.employmentStatus || "unknown",
@@ -570,9 +616,9 @@ router.get("/loan-applications", asyncHandler(async (req, res) => {
     rows.map((l) => ({
       id: l.id,
       customerId: l.customerId,
-      loanProductId: null,
+      loanProductId: l.loanProductId,
       requestedAmount: Number(l.principal),
-      termMonths: null,
+      termMonths: Number(l.termMonths),
       purpose: l.loanType,
       monthlyIncome: 0,
       employmentStatus: "unknown",
@@ -605,7 +651,9 @@ router.patch("/admin/loan-applications/:id", asyncHandler(async (req, res) => {
   res.json({
     id: loan.id,
     customerId: loan.customerId,
+    loanProductId: loan.loanProductId,
     requestedAmount: Number(loan.principal),
+    termMonths: Number(loan.termMonths),
     status: loan.status,
     interestRate: Number(loan.interestRate || 0),
     createdAt: loan.createdAt,

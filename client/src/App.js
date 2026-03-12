@@ -5,13 +5,13 @@ import AuthPage from "./components/AuthPage";
 import HomePage from "./components/HomePage";
 import AdminPage from "./components/AdminPage";
 import SiteFooter from "./components/SiteFooter";
+import AccountsTab from "./components/tabs/AccountsTab";
 import TransfersTab from "./components/tabs/TransfersTab";
 import BillPaymentsTab from "./components/tabs/BillPaymentsTab";
 import StatementsTab from "./components/tabs/StatementsTab";
 import InvestmentsTab from "./components/tabs/InvestmentsTab";
 import LoansTab from "./components/tabs/LoansTab";
 import ComplianceTab from "./components/tabs/ComplianceTab";
-import RequirementsTab from "./components/tabs/RequirementsTab";
 import AdminLockScreen from "./components/tabs/AdminLockScreen";
 
 export default function App() {
@@ -24,7 +24,6 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [accounts, setAccounts] = useState([]);
-  const [requirements, setRequirements] = useState(null);
   const [scheduledBills, setScheduledBills] = useState([]);
   const [loanProducts, setLoanProducts] = useState([]);
   const [loanApplications, setLoanApplications] = useState([]);
@@ -38,6 +37,7 @@ export default function App() {
   const [notificationCustomer, setNotificationCustomer] = useState("");
   const [notifications, setNotifications] = useState([]);
 
+  const [accountMessage, setAccountMessage] = useState("");
   const [transferForm, setTransferForm] = useState({ fromAccountId: "", toAccountId: "", amount: "", description: "" });
   const [transferMessage, setTransferMessage] = useState("");
   const [pendingTransfer, setPendingTransfer] = useState({ transferId: "", otp: "" });
@@ -72,7 +72,7 @@ export default function App() {
   const [adminReport, setAdminReport] = useState(null);
   const [adminLastUpdated, setAdminLastUpdated] = useState("");
   const [adminAccountForm, setAdminAccountForm] = useState({
-    customerId: "",
+    customerName: "",
     type: "Simple Access",
     openingBalance: "0",
     accountNumber: "",
@@ -95,8 +95,7 @@ export default function App() {
     setLoading(true);
     setError("");
     try {
-      const [reqs, customerRows, accountRows, scheduled, products, apps, invs, rate, sumRows] = await Promise.all([
-        api.getRequirements(),
+      const [customerRows, accountRows, scheduled, products, apps, invs, rate, sumRows] = await Promise.all([
         api.getCustomers(),
         api.getAccounts(),
         api.getScheduledBills(),
@@ -106,8 +105,6 @@ export default function App() {
         api.getInterestRate(),
         api.getSummaries(),
       ]);
-
-      setRequirements(reqs);
       setCustomers(customerRows);
       setAccounts(accountRows);
       setScheduledBills(scheduled);
@@ -400,13 +397,13 @@ export default function App() {
     setAdminAccountMessage("");
     try {
       await api.createAccount({
-        customerId: adminAccountForm.customerId,
+        customerName: adminAccountForm.customerName,
         type: adminAccountForm.type,
         openingBalance: Number(adminAccountForm.openingBalance || 0),
         accountNumber: adminAccountForm.accountNumber || undefined,
       });
       setAdminAccountMessage("Account created successfully.");
-      setAdminAccountForm({ ...adminAccountForm, accountNumber: "" });
+      setAdminAccountForm({ customerName: "", type: "Simple Access", openingBalance: "0", accountNumber: "" });
       await loadInitialData();
     } catch (err) {
       setAdminAccountMessage(err.message);
@@ -532,6 +529,18 @@ export default function App() {
         />
       )}
 
+      {!loading && activeTab === "Accounts" && (
+        <AccountsTab
+          accounts={accounts}
+          customers={customers}
+          customerMap={customerMap}
+          currentUser={currentUser}
+          accountMessage={accountMessage}
+          setAccountMessage={setAccountMessage}
+          onCreateAccount={onCreateAdminAccount}
+        />
+      )}
+
       {!loading && activeTab === "Transfers" && (
         <TransfersTab
           accounts={accounts}
@@ -610,10 +619,6 @@ export default function App() {
           summaries={summaries}
           complianceMessage={complianceMessage}
         />
-      )}
-
-      {!loading && activeTab === "Requirements" && (
-        <RequirementsTab requirements={requirements} />
       )}
 
       <SiteFooter currentYear={currentYear} />

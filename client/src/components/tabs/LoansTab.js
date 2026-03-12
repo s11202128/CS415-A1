@@ -36,7 +36,7 @@ export default function LoansTab({
 
       <article className="panel">
         <h2>Apply For Loan</h2>
-        <form onSubmit={onSubmitLoan}>
+        <form className="loan-form-horizontal" onSubmit={onSubmitLoan}>
           <label>
             Customer
             <select value={loanForm.customerId} onChange={(e) => setLoanForm({ ...loanForm, customerId: e.target.value })} required>
@@ -118,9 +118,9 @@ export default function LoansTab({
             </tr>
           </thead>
           <tbody>
-            {loanApplications.map((a) => (
+            {loanApplications.map((a, index) => (
               <tr key={a.id}>
-                <td>{a.id}</td>
+                <td>{index + 1}</td>
                 <td>{customerMap[a.customerId]?.fullName || a.customerId}</td>
                 <td>{loanProducts.find((p) => p.id === a.loanProductId)?.name || a.loanProductId}</td>
                 <td>FJD {a.requestedAmount.toFixed(2)}</td>

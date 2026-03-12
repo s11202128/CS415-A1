@@ -1,5 +1,4 @@
 export default function AdminAccountsTab({
-  customers,
   accounts,
   adminAccountForm,
   setAdminAccountForm,
@@ -14,17 +13,13 @@ export default function AdminAccountsTab({
         <h3>Open New Account</h3>
         <form className="admin-form" onSubmit={onCreateAdminAccount}>
           <label>
-            Customer
-            <select
-              value={adminAccountForm.customerId}
-              onChange={(e) => setAdminAccountForm({ ...adminAccountForm, customerId: e.target.value })}
+            Customer Name
+            <input
+              value={adminAccountForm.customerName}
+              onChange={(e) => setAdminAccountForm({ ...adminAccountForm, customerName: e.target.value })}
+              placeholder="Type full name (existing or new customer)"
               required
-            >
-              <option value="">Select customer</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>{c.fullName} ({c.id})</option>
-              ))}
-            </select>
+            />
           </label>
           <label>
             Account Type

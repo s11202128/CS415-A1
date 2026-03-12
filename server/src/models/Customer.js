@@ -3,8 +3,8 @@ const sequelize = require('../config/database');
 
 const Customer = sequelize.define('Customer', {
   id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.BIGINT.UNSIGNED,
+    autoIncrement: true,
     primaryKey: true,
   },
   fullName: {

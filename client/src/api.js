@@ -58,7 +58,6 @@ export const api = {
   register: (body) => request("/auth/register", { method: "POST", body: JSON.stringify(body) }),
   login: (body) => request("/auth/login", { method: "POST", body: JSON.stringify(body) }),
   verifyAdminCredentials: (body) => request("/auth/admin-verify", { method: "POST", body: JSON.stringify(body) }),
-  getRequirements: () => request("/requirements"),
   getCustomers: () => request("/customers"),
   updateCustomerAdmin: (id, body) => request(`/admin/customers/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   getAccounts: () => request("/accounts"),

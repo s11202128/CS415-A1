@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { api } from "../../api";
 
 export default function StatementsTab({
@@ -11,10 +12,34 @@ export default function StatementsTab({
   setNotificationCustomer,
   notifications,
 }) {
+  const [filterType, setFilterType] = useState("all");
+  const [sortOrder, setSortOrder] = useState("desc");
+
+  // Filter transactions based on type
+  const filteredRows = statementRows.filter((r) => {
+    if (filterType === "all") return true;
+    return r.kind === filterType;
+  });
+
+  // Sort transactions
+  const sortedRows = [...filteredRows].sort((a, b) => {
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+  });
+
+  // Calculate summary statistics
+  const totalCredit = filteredRows
+    .filter((r) => r.kind === "credit")
+    .reduce((sum, r) => sum + r.amount, 0);
+  const totalDebit = filteredRows
+    .filter((r) => r.kind === "debit")
+    .reduce((sum, r) => sum + r.amount, 0);
+
   return (
     <section className="panel-grid">
       <article className="panel wide">
-        <h2>On-Demand Statements</h2>
+        <h2>Transaction Statements & History</h2>
         <div className="inline-controls">
           <label>
             Account
@@ -24,11 +49,44 @@ export default function StatementsTab({
               ))}
             </select>
           </label>
-          <button onClick={fetchStatement}>View Statement</button>
+          <label>
+            Filter by Type
+            <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+              <option value="all">All Transactions</option>
+              <option value="credit">Credit (Deposits)</option>
+              <option value="debit">Debit (Withdrawals)</option>
+            </select>
+          </label>
+          <label>
+            Sort
+            <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+              <option value="desc">Newest First</option>
+              <option value="asc">Oldest First</option>
+            </select>
+          </label>
+          <button onClick={fetchStatement}>Refresh Statement</button>
           <a className="button-link" href={api.statementDownloadUrl(statementAccount)} target="_blank" rel="noreferrer">
-            Download CSV
+            📥 Download CSV
           </a>
         </div>
+
+        {statementRows.length > 0 && (
+          <div className="statement-summary">
+            <div className="summary-card">
+              <strong>Total Credits:</strong> FJD {totalCredit.toFixed(2)}
+            </div>
+            <div className="summary-card">
+              <strong>Total Debits:</strong> FJD {totalDebit.toFixed(2)}
+            </div>
+            <div className="summary-card">
+              <strong>Net Change:</strong> FJD {(totalCredit - totalDebit).toFixed(2)}
+            </div>
+            <div className="summary-card">
+              <strong>Transaction Count:</strong> {sortedRows.length}
+            </div>
+          </div>
+        )}
+
         <table>
           <thead>
             <tr>
@@ -39,20 +97,31 @@ export default function StatementsTab({
             </tr>
           </thead>
           <tbody>
-            {statementRows.map((r) => (
-              <tr key={r.id}>
-                <td>{new Date(r.createdAt).toLocaleString()}</td>
-                <td>{r.kind}</td>
-                <td>FJD {r.amount.toFixed(2)}</td>
-                <td>{r.description}</td>
+            {sortedRows.length > 0 ? (
+              sortedRows.map((r) => (
+                <tr key={r.id} className={`tx-${r.kind}`}>
+                  <td>{new Date(r.createdAt).toLocaleString()}</td>
+                  <td>
+                    <span className={`badge badge-${r.kind}`}>
+                      {r.kind === "credit" ? "+" : "-"} {r.kind}
+                    </span>
+                  </td>
+                  <td className={`amount-${r.kind}`}>FJD {r.amount.toFixed(2)}</td>
+                  <td>{r.description}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="no-data">No transactions found. Click "Refresh Statement" to load.</td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </article>
 
       <article className="panel">
-        <h2>SMS Notifications</h2>
+        <h2>📱 SMS Notifications</h2>
+        <p className="hint">Real-time banking alerts and confirmations</p>
         <label>
           Customer
           <select value={notificationCustomer} onChange={(e) => setNotificationCustomer(e.target.value)}>
@@ -61,12 +130,20 @@ export default function StatementsTab({
             ))}
           </select>
         </label>
+        <div className="notification-count">
+          {notifications.length} notification(s)
+        </div>
         <ul className="feed">
-          {notifications.map((n) => (
-            <li key={n.id}>
-              <strong>{new Date(n.createdAt).toLocaleString()}:</strong> {n.message}
-            </li>
-          ))}
+          {notifications.length > 0 ? (
+            notifications.map((n) => (
+              <li key={n.id} className="notification-item">
+                <strong>{new Date(n.createdAt).toLocaleString()}:</strong>
+                <p>{n.message}</p>
+              </li>
+            ))
+          ) : (
+            <li className="no-data">No notifications yet</li>
+          )}
         </ul>
       </article>
     </section>

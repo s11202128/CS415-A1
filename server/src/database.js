@@ -13,6 +13,46 @@ const DB_HOST = process.env.DB_HOST || "localhost";
 const DB_PORT = Number(process.env.DB_PORT || 3306);
 const DB_SYNC_ALTER = String(process.env.DB_SYNC_ALTER || "false").toLowerCase() === "true";
 
+function isLegacyCustomerIdType(columnType) {
+  const normalized = String(columnType || "").toLowerCase();
+  return normalized.includes("char") || normalized.includes("uuid");
+}
+
+function isLegacyAccountIdType(columnType) {
+  const normalized = String(columnType || "").toLowerCase();
+  return normalized.includes("char") || normalized.includes("uuid");
+}
+
+function isLegacyLoanIdType(columnType) {
+  const normalized = String(columnType || "").toLowerCase();
+  return normalized.includes("char") || normalized.includes("uuid");
+}
+
+function isLegacyBillIdType(columnType) {
+  const normalized = String(columnType || "").toLowerCase();
+  return normalized.includes("char") || normalized.includes("uuid");
+}
+
+function isLegacyInvestmentIdType(columnType) {
+  const normalized = String(columnType || "").toLowerCase();
+  return normalized.includes("char") || normalized.includes("uuid");
+}
+
+function isLegacyOtpVerificationIdType(columnType) {
+  const normalized = String(columnType || "").toLowerCase();
+  return normalized.includes("char") || normalized.includes("uuid");
+}
+
+function isLegacyTransactionIdType(columnType) {
+  const normalized = String(columnType || "").toLowerCase();
+  return normalized.includes("char") || normalized.includes("uuid");
+}
+
+function isLegacyRegistrationIdType(columnType) {
+  const normalized = String(columnType || "").toLowerCase();
+  return normalized.includes("char") || normalized.includes("uuid");
+}
+
 const initializeDatabase = async () => {
   try {
     // First, create the database if it doesn't exist
@@ -26,11 +66,73 @@ const initializeDatabase = async () => {
     await connection.query(`CREATE DATABASE IF NOT EXISTS ${DB_NAME}`);
     await connection.end();
 
-    // Avoid repeated ALTER operations that can create excess indexes in MySQL.
-    await sequelize.sync({ alter: DB_SYNC_ALTER });
+    const queryInterface = sequelize.getQueryInterface();
+    const tables = await queryInterface.showAllTables();
+    const normalizedTables = tables
+      .map((t) => (typeof t === "string" ? t : Object.values(t)[0]));
+    const hasCustomersTable = normalizedTables.includes("customers");
+    const hasAccountsTable = normalizedTables.includes("accounts");
+    const hasLoansTable = normalizedTables.includes("loans");
+    const hasBillsTable = normalizedTables.includes("bills");
+    const hasInvestmentsTable = normalizedTables.includes("investments");
+    const hasOtpVerificationsTable = normalizedTables.includes("otp_verifications");
+    const hasTransactionsTable = normalizedTables.includes("transactions");
+    const hasRegistrationsTable = normalizedTables.includes("registrations");
+
+    let requiresCustomerIdMigration = false;
+    let requiresAccountIdMigration = false;
+    let requiresLoanIdMigration = false;
+    let requiresBillIdMigration = false;
+    let requiresInvestmentIdMigration = false;
+    let requiresOtpVerificationIdMigration = false;
+    let requiresTransactionIdMigration = false;
+    let requiresRegistrationIdMigration = false;
+    
+    if (hasCustomersTable) {
+      const customerColumns = await queryInterface.describeTable("customers");
+      requiresCustomerIdMigration = isLegacyCustomerIdType(customerColumns?.id?.type);
+    }
+    if (hasAccountsTable) {
+      const accountColumns = await queryInterface.describeTable("accounts");
+      requiresAccountIdMigration = isLegacyAccountIdType(accountColumns?.id?.type);
+    }
+    if (hasLoansTable) {
+      const loanColumns = await queryInterface.describeTable("loans");
+      requiresLoanIdMigration = isLegacyLoanIdType(loanColumns?.id?.type);
+    }
+    if (hasBillsTable) {
+      const billColumns = await queryInterface.describeTable("bills");
+      requiresBillIdMigration = isLegacyBillIdType(billColumns?.id?.type);
+    }
+    if (hasInvestmentsTable) {
+      const investmentColumns = await queryInterface.describeTable("investments");
+      requiresInvestmentIdMigration = isLegacyInvestmentIdType(investmentColumns?.id?.type);
+    }
+    if (hasOtpVerificationsTable) {
+      const otpColumns = await queryInterface.describeTable("otp_verifications");
+      requiresOtpVerificationIdMigration = isLegacyOtpVerificationIdType(otpColumns?.id?.type);
+    }
+    if (hasTransactionsTable) {
+      const transactionColumns = await queryInterface.describeTable("transactions");
+      requiresTransactionIdMigration = isLegacyTransactionIdType(transactionColumns?.id?.type);
+    }
+    if (hasRegistrationsTable) {
+      const registrationColumns = await queryInterface.describeTable("registrations");
+      requiresRegistrationIdMigration = isLegacyRegistrationIdType(registrationColumns?.id?.type);
+    }
+
+    if (requiresCustomerIdMigration || requiresAccountIdMigration || requiresLoanIdMigration || 
+        requiresBillIdMigration || requiresInvestmentIdMigration || requiresOtpVerificationIdMigration || 
+        requiresTransactionIdMigration || requiresRegistrationIdMigration) {
+      console.warn("Detected legacy UUID IDs. Rebuilding schema to use integer auto-increment IDs.");
+      console.warn("Existing local data will be recreated from seed data after migration.");
+      await sequelize.sync({ force: true });
+    } else {
+      // Avoid repeated ALTER operations that can create excess indexes in MySQL.
+      await sequelize.sync({ alter: DB_SYNC_ALTER });
+    }
 
     // Ensure customer admin/compliance fields exist even when DB_SYNC_ALTER is false.
-    const queryInterface = sequelize.getQueryInterface();
     const customerColumns = await queryInterface.describeTable("customers");
 
     if (!customerColumns.tin) {
@@ -60,6 +162,57 @@ const initializeDatabase = async () => {
         allowNull: true,
         defaultValue: "approved",
       });
+    }
+
+    const loanColumns = await queryInterface.describeTable("loans");
+    if (!loanColumns.loanProductId) {
+      await queryInterface.addColumn("loans", "loanProductId", {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue: "",
+      });
+    }
+    if (!loanColumns.termMonths) {
+      await queryInterface.addColumn("loans", "termMonths", {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 0,
+      });
+    }
+
+    const [[{ totalAccounts }]] = await sequelize.query("SELECT COUNT(*) AS totalAccounts FROM accounts");
+    if (Number(totalAccounts || 0) === 0) {
+      await sequelize.query("ALTER TABLE accounts AUTO_INCREMENT = 101");
+    }
+
+    const [[{ totalLoans }]] = await sequelize.query("SELECT COUNT(*) AS totalLoans FROM loans");
+    if (Number(totalLoans || 0) === 0) {
+      await sequelize.query("ALTER TABLE loans AUTO_INCREMENT = 1");
+    }
+
+    const [[{ totalBills }]] = await sequelize.query("SELECT COUNT(*) AS totalBills FROM bills");
+    if (Number(totalBills || 0) === 0) {
+      await sequelize.query("ALTER TABLE bills AUTO_INCREMENT = 1");
+    }
+
+    const [[{ totalInvestments }]] = await sequelize.query("SELECT COUNT(*) AS totalInvestments FROM investments");
+    if (Number(totalInvestments || 0) === 0) {
+      await sequelize.query("ALTER TABLE investments AUTO_INCREMENT = 1");
+    }
+
+    const [[{ totalOtpVerifications }]] = await sequelize.query("SELECT COUNT(*) AS totalOtpVerifications FROM otp_verifications");
+    if (Number(totalOtpVerifications || 0) === 0) {
+      await sequelize.query("ALTER TABLE otp_verifications AUTO_INCREMENT = 1");
+    }
+
+    const [[{ totalTransactions }]] = await sequelize.query("SELECT COUNT(*) AS totalTransactions FROM transactions");
+    if (Number(totalTransactions || 0) === 0) {
+      await sequelize.query("ALTER TABLE transactions AUTO_INCREMENT = 1");
+    }
+
+    const [[{ totalRegistrations }]] = await sequelize.query("SELECT COUNT(*) AS totalRegistrations FROM registrations");
+    if (Number(totalRegistrations || 0) === 0) {
+      await sequelize.query("ALTER TABLE registrations AUTO_INCREMENT = 1");
     }
 
     console.log("Database tables synchronized");

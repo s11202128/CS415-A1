@@ -3,8 +3,8 @@ const sequelize = require('../config/database');
 
 const Registration = sequelize.define('Registration', {
   id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.BIGINT.UNSIGNED,
+    autoIncrement: true,
     primaryKey: true,
   },
   fullName: {
