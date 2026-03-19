@@ -321,7 +321,9 @@ export default function App() {
   // ────────────────────────────────────────────────────────────────────────
 
   async function onInitiateTransfer(e) {
-    e.preventDefault();
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
     setTransferMessage("");
     try {
       const payload = {
@@ -480,7 +482,10 @@ export default function App() {
     try {
       const updatedProfile = await api.updateProfile({
         customerId: currentUser.customerId,
-        ...profileForm,
+        email: profileForm.email,
+        mobile: profileForm.mobile,
+        currentPassword: profileForm.currentPassword,
+        newPassword: profileForm.newPassword,
       });
       setCurrentUser((prev) => ({
         ...prev,
@@ -759,6 +764,7 @@ export default function App() {
 
           {!loading && activeTab === "Bill Payments" && (
             <BillPaymentsTab
+              accounts={accounts}
               manualBillForm={manualBillForm}
               setManualBillForm={setManualBillForm}
               onManualBill={onManualBill}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { jsPDF } from "jspdf";
 
 export default function StatementsTab({
+  accounts,
   statementRows,
   statementRequested,
   statementRequests,
@@ -9,6 +10,7 @@ export default function StatementsTab({
   const [activeSection, setActiveSection] = useState("Statement Preview");
   const [filterType, setFilterType] = useState("all");
   const [sortOrder, setSortOrder] = useState("desc");
+  const hasAccounts = (accounts || []).length > 0;
 
   const formatDateTime = (value) => new Date(value).toLocaleString();
   const formatAmount = (value) => `FJD ${Number(value || 0).toFixed(2)}`;
@@ -218,6 +220,9 @@ export default function StatementsTab({
           ))}
         </nav>
         <div className="acct-tab-body">
+          {!hasAccounts && (
+            <p className="status error">No account found. Open an account before accessing statement services.</p>
+          )}
 
           {activeSection === "Statement Preview" && (
             <>
@@ -249,7 +254,7 @@ export default function StatementsTab({
                 </div>
               )}
               {!statementRequested ? (
-                <p className="no-data">Submit and load a statement request to preview statement data.</p>
+                <p className="no-data">{hasAccounts ? "Submit and load a statement request to preview statement data." : "Statement preview is unavailable until you open an account."}</p>
               ) : sortedRows.length === 0 ? (
                 <p className="no-data">No transactions found for the selected account.</p>
               ) : (
@@ -283,7 +288,9 @@ export default function StatementsTab({
             <>
               <h2>E Documents</h2>
               <p className="hint">Download monthly PDF statements from your statement data.</p>
-              {!statementRequested ? (
+              {!hasAccounts ? (
+                <p className="no-data">E-documents are unavailable until you open an account.</p>
+              ) : !statementRequested ? (
                 <p className="no-data">Load statement data first to generate e-documents.</p>
               ) : monthlyDocuments.length === 0 ? (
                 <p className="no-data">No monthly documents available yet.</p>

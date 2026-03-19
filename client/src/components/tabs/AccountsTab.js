@@ -15,6 +15,7 @@ export default function AccountsTab({
     openingBalance: "0",
     accountNumber: "",
   });
+  const [latestRequest, setLatestRequest] = useState(null);
 
   const activeCustomerId = currentUser?.customerId || currentUser?.userId || currentUser?.id || "";
 
@@ -31,12 +32,13 @@ export default function AccountsTab({
       return;
     }
     try {
-      await api.createAccountRequest({
+      const createdRequest = await api.createAccountRequest({
         customerId: Number(activeCustomerId),
         type: newAccountForm.type,
         openingBalance: Number(newAccountForm.openingBalance || 0),
         accountNumber: newAccountForm.accountNumber || undefined,
       });
+      setLatestRequest(createdRequest);
       setAccountMessage("✅ Account request submitted. It will be activated after admin approval.");
       setNewAccountForm({ type: "Savings", openingBalance: "0", accountNumber: "" });
       // Refresh would be done by parent component
@@ -215,6 +217,15 @@ export default function AccountsTab({
                 <p className={`status ${accountMessage.includes("✅") ? "success" : "error"}`}>
                   {accountMessage}
                 </p>
+              )}
+              {latestRequest && (
+                <div className="status-card">
+                  <p className="hint">Latest request status</p>
+                  <p>
+                    Account <strong>{latestRequest.accountNumber}</strong> is
+                    {" "}<span className={`status-badge status-${latestRequest.status}`}>{latestRequest.status}</span>
+                  </p>
+                </div>
               )}
             </>
           )}

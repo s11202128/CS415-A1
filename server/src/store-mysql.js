@@ -946,7 +946,10 @@ async function updateProfile(customerId, payload) {
 
   const updates = {};
   if (payload.fullName !== undefined) {
-    updates.fullName = String(payload.fullName || "").trim();
+    const requestedName = String(payload.fullName || "").trim();
+    if (requestedName && requestedName !== String(customer.fullName || "").trim()) {
+      throw new Error("For security reasons, name changes must be requested at a Bank of Fiji branch.");
+    }
   }
   if (payload.mobile !== undefined) {
     validateMobile(payload.mobile);
@@ -979,13 +982,6 @@ async function updateProfile(customerId, payload) {
   }
 
   await customer.update(updates);
-  if (updates.fullName !== undefined) {
-    await Account.update(
-      { accountHolder: customer.fullName },
-      { where: { customerId: customer.id } }
-    );
-  }
-
   return {
     id: customer.id,
     fullName: customer.fullName,

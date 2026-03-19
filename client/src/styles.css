@@ -1238,6 +1238,19 @@ tbody tr:hover {
   padding-right: 52px;
 }
 
+.auth-input-error {
+  border-color: #d83b36 !important;
+  box-shadow: 0 0 0 3px rgba(216, 59, 54, 0.15) !important;
+  background: linear-gradient(180deg, #fff6f6, #fff0f0) !important;
+}
+
+.auth-inline-error {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: #b42318;
+  font-weight: 600;
+}
+
 .pw-toggle {
   position: absolute;
   right: 10px;
@@ -1755,6 +1768,14 @@ tbody tr:hover {
 
 .acct-tab-body {
   min-height: 120px;
+}
+
+.status-card {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid #d7e4f2;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, #f8fbff, #f0f6fd);
 }
 
 .date,

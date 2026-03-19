@@ -97,8 +97,9 @@ export default function TransfersTab({
     accounts.find((account) => String(account.id) === String(transferForm.fromAccountId || "")) ||
     accounts[0] ||
     null;
+  const hasAccounts = accounts.length > 0;
   const normalizedToAccountNumber = String(transferForm.toAccountNumber || "").trim();
-  const hasValidToAccountFormat = /^\d{12}$/.test(normalizedToAccountNumber) || /^\d+$/.test(normalizedToAccountNumber);
+  const hasValidToAccountFormat = /^\d{12}$/.test(normalizedToAccountNumber);
   const destinationIsValidated =
     destinationValidation.status === "success" &&
     destinationValidation.accountNumber === normalizedToAccountNumber;
@@ -119,12 +120,22 @@ export default function TransfersTab({
       setDestinationValidation({ status: "idle", customerName: "", accountNumber: "", message: "" });
       return;
     }
-    if (!hasValidToAccountFormat) {
+    if (!/^\d+$/.test(normalizedToAccountNumber)) {
       setDestinationValidation({
         status: "error",
         customerName: "",
         accountNumber: normalizedToAccountNumber,
-        message: "Enter a 12-digit account number or numeric customer ID",
+        message: "Enter digits only",
+      });
+      return;
+    }
+
+    if (!hasValidToAccountFormat) {
+      setDestinationValidation({
+        status: "idle",
+        customerName: "",
+        accountNumber: normalizedToAccountNumber,
+        message: "Enter a full 12-digit account number",
       });
       return;
     }
@@ -189,12 +200,12 @@ export default function TransfersTab({
   async function handleSendTransfer(e) {
     e.preventDefault();
 
-    if (!sourceAccount) {
+    if (!hasAccounts || !sourceAccount) {
       setDestinationValidation({
         status: "error",
         customerName: "",
         accountNumber: "",
-        message: "Please select a valid source account",
+        message: "No account found. Open an account before using transfer services.",
       });
       return;
     }
@@ -204,7 +215,7 @@ export default function TransfersTab({
         status: "error",
         customerName: "",
         accountNumber: "",
-        message: "Destination account number or customer ID is required",
+        message: "Destination account number is required",
       });
       return;
     }
@@ -214,7 +225,7 @@ export default function TransfersTab({
         status: "error",
         customerName: "",
         accountNumber: normalizedToAccountNumber,
-        message: "Enter a 12-digit account number or numeric customer ID",
+        message: "Enter a valid 12-digit account number",
       });
       return;
     }
@@ -276,15 +287,18 @@ export default function TransfersTab({
 
         <div className="acct-tab-body">
           <p className="hint transfers-tab-desc">{activeTransferOption.description}</p>
+          {!hasAccounts && (
+            <p className="status error">No account found. You cannot transfer funds until you open an account.</p>
+          )}
 
         {showTransferForm ? (
           <form onSubmit={handleSendTransfer}>
             <label>
-              To Account / Customer ID
+              To Account Number
               <input
                 value={transferForm.toAccountNumber || ""}
                 onChange={(e) => setTransferForm({ ...transferForm, toAccountNumber: e.target.value })}
-                placeholder="Enter 12-digit account number or customer ID"
+                placeholder="Enter 12-digit account number"
                 required
               />
             </label>
@@ -314,7 +328,7 @@ export default function TransfersTab({
                 placeholder="Enter transfer reason"
               />
             </label>
-            <button type="submit" disabled={!sourceAccount}>
+            <button type="submit" disabled={!sourceAccount || !hasAccounts}>
               Send Transfer
             </button>
           </form>
@@ -371,7 +385,7 @@ export default function TransfersTab({
               />
             </label>
             {localBankMessage && <p className="hint">{localBankMessage}</p>}
-            <button type="submit" disabled={!sourceAccount}>
+            <button type="submit" disabled={!sourceAccount || !hasAccounts}>
               Send Transfer
             </button>
           </form>
