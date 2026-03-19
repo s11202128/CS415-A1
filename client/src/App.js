@@ -289,7 +289,10 @@ export default function App() {
     };
   }, [showAdmin, currentUser?.isAdmin, adminAccessGranted, selectedAccountForTx, accounts]);
 
-  const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
+  const totalBalance = accounts.reduce((sum, a) => {
+    const isApprovedAccount = ["active", "approved"].includes(String(a.status || "").toLowerCase());
+    return isApprovedAccount ? sum + Number(a.balance || 0) : sum;
+  }, 0);
   const currentYear = new Date().getFullYear();
 
   // ── Auth gate ────────────────────────────────────────────────────────────
@@ -321,7 +324,7 @@ export default function App() {
   // ────────────────────────────────────────────────────────────────────────
 
   async function onInitiateTransfer(e) {
-    e.preventDefault();
+    e?.preventDefault?.();
     setTransferMessage("");
     try {
       const payload = {

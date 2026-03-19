@@ -61,10 +61,6 @@ const FIJI_LOCAL_BANKS = [
   "Fiji Development Bank",
 ];
 
-function displayAccountType(type) {
-  return type === "Simple Access" ? "Cheque" : type;
-}
-
 function toAmount(value) {
   const parsed = Number(value || 0);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
@@ -102,7 +98,7 @@ export default function TransfersTab({
     accounts[0] ||
     null;
   const normalizedToAccountNumber = String(transferForm.toAccountNumber || "").trim();
-  const hasValidToAccountFormat = /^\d{12}$/.test(normalizedToAccountNumber);
+  const hasValidToAccountFormat = /^\d{12}$/.test(normalizedToAccountNumber) || /^\d+$/.test(normalizedToAccountNumber);
   const destinationIsValidated =
     destinationValidation.status === "success" &&
     destinationValidation.accountNumber === normalizedToAccountNumber;
@@ -128,7 +124,7 @@ export default function TransfersTab({
         status: "error",
         customerName: "",
         accountNumber: normalizedToAccountNumber,
-        message: "Destination account number must be 12 digits",
+        message: "Enter a 12-digit account number or numeric customer ID",
       });
       return;
     }
@@ -190,6 +186,72 @@ export default function TransfersTab({
     }
   }, [showTransferForm, showLocalBankForm, sourceAccount, transferForm.fromAccountId, setTransferForm]);
 
+  async function handleSendTransfer(e) {
+    e.preventDefault();
+
+    if (!sourceAccount) {
+      setDestinationValidation({
+        status: "error",
+        customerName: "",
+        accountNumber: "",
+        message: "Please select a valid source account",
+      });
+      return;
+    }
+
+    if (!normalizedToAccountNumber) {
+      setDestinationValidation({
+        status: "error",
+        customerName: "",
+        accountNumber: "",
+        message: "Destination account number or customer ID is required",
+      });
+      return;
+    }
+
+    if (!hasValidToAccountFormat) {
+      setDestinationValidation({
+        status: "error",
+        customerName: "",
+        accountNumber: normalizedToAccountNumber,
+        message: "Enter a 12-digit account number or numeric customer ID",
+      });
+      return;
+    }
+
+    try {
+      setDestinationValidation({
+        status: "loading",
+        customerName: "",
+        accountNumber: normalizedToAccountNumber,
+        message: "Validating destination account...",
+      });
+
+      const result = await api.validateTransferDestination({
+        fromAccountId: Number(transferForm.fromAccountId || sourceAccount.id),
+        toAccountNumber: normalizedToAccountNumber,
+      });
+
+      const validatedName = result.customerName || "Unknown customer";
+      setDestinationValidation({
+        status: "success",
+        customerName: validatedName,
+        accountNumber: normalizedToAccountNumber,
+        message: "Destination account verified",
+      });
+
+      window.alert(`Receiver verified: ${validatedName}`);
+      await onInitiateTransfer();
+    } catch (err) {
+      setDestinationValidation({
+        status: "error",
+        customerName: "",
+        accountNumber: normalizedToAccountNumber,
+        message: err.message || "Could not validate destination account",
+      });
+    }
+  }
+
   function handleLocalBankSubmit(e) {
     e.preventDefault();
     setLocalBankMessage("Local bank transfer submitted. Processing may take 1\u20133 business days.");
@@ -227,28 +289,13 @@ export default function TransfersTab({
         </div>
 
         {showTransferForm ? (
-          <form onSubmit={onInitiateTransfer}>
+          <form onSubmit={handleSendTransfer}>
             <label>
-              Account Type
-              <input value={sourceAccount ? displayAccountType(sourceAccount.type) : ""} readOnly placeholder="Auto-detected" />
-            </label>
-            <label>
-              My Account Number
-              <input
-                value={sourceAccount ? (sourceAccount.accountNumber || `ID ${sourceAccount.id}`) : ""}
-                readOnly
-                placeholder="Auto-detected"
-              />
-            </label>
-            {!sourceAccount && (
-              <p className="status error">No account found for this user. Please create an account first.</p>
-            )}
-            <label>
-              To Account
+              To Account / Customer ID
               <input
                 value={transferForm.toAccountNumber || ""}
                 onChange={(e) => setTransferForm({ ...transferForm, toAccountNumber: e.target.value })}
-                placeholder="Enter destination account number"
+                placeholder="Enter 12-digit account number or customer ID"
                 required
               />
             </label>
@@ -278,27 +325,12 @@ export default function TransfersTab({
                 placeholder="Enter transfer reason"
               />
             </label>
-            <button type="submit" disabled={!sourceAccount || !destinationIsValidated}>
+            <button type="submit" disabled={!sourceAccount}>
               Send Transfer
             </button>
           </form>
         ) : showLocalBankForm ? (
           <form onSubmit={handleLocalBankSubmit}>
-            <label>
-              Account Type
-              <input value={sourceAccount ? displayAccountType(sourceAccount.type) : ""} readOnly placeholder="Auto-detected" />
-            </label>
-            <label>
-              My Account Number
-              <input
-                value={sourceAccount ? (sourceAccount.accountNumber || `ID ${sourceAccount.id}`) : ""}
-                readOnly
-                placeholder="Auto-detected"
-              />
-            </label>
-            {!sourceAccount && (
-              <p className="status error">No account found for this user. Please create an account first.</p>
-            )}
             <label>
               Recipient Name
               <input

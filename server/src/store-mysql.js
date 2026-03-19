@@ -252,9 +252,39 @@ async function resolveDestinationAccountId(payload) {
     return rawToAccountId;
   }
 
+  const rawToCustomerId = Number(payload?.toCustomerId);
+  if (Number.isFinite(rawToCustomerId) && rawToCustomerId > 0) {
+    const destinationForCustomer = await Account.findOne({
+      where: {
+        customerId: rawToCustomerId,
+        status: { [Op.notIn]: ["frozen", "suspended", "closed"] },
+      },
+      order: [["createdAt", "ASC"]],
+    });
+    if (!destinationForCustomer) {
+      throw new Error("No active account found for destination customer");
+    }
+    return destinationForCustomer.id;
+  }
+
   const accountNumber = String(payload?.toAccountNumber || "").trim();
   if (!accountNumber) {
-    throw new Error("toAccountId or toAccountNumber is required");
+    throw new Error("toAccountId, toCustomerId, or toAccountNumber is required");
+  }
+
+  // Allow customer ID input for same-bank transfers to registered users.
+  if (/^\d+$/.test(accountNumber) && !/^\d{12}$/.test(accountNumber)) {
+    const destinationForCustomer = await Account.findOne({
+      where: {
+        customerId: Number(accountNumber),
+        status: { [Op.notIn]: ["frozen", "suspended", "closed"] },
+      },
+      order: [["createdAt", "ASC"]],
+    });
+    if (!destinationForCustomer) {
+      throw new Error("No active account found for destination customer");
+    }
+    return destinationForCustomer.id;
   }
 
   const destination = await Account.findOne({ where: { accountNumber } });

@@ -563,14 +563,17 @@ router.post("/transfer", requireAuth, asyncHandler(async (req, res) => {
 
 router.post("/transfers/validate-destination", requireAuth, asyncHandler(async (req, res) => {
   const payload = req.body || {};
-  const accountNumber = String(payload.toAccountNumber || "").trim();
+  const destinationInput = String(payload.toAccountNumber || "").trim();
   const fromAccountId = Number(payload.fromAccountId || 0);
 
   if (!fromAccountId) {
     return res.status(400).json({ error: "fromAccountId is required" });
   }
-  if (!/^\d{12}$/.test(accountNumber)) {
-    return res.status(400).json({ error: "Destination account number must be 12 digits" });
+  if (!destinationInput) {
+    return res.status(400).json({ error: "Destination account number or customer ID is required" });
+  }
+  if (!/^\d{12}$/.test(destinationInput) && !/^\d+$/.test(destinationInput)) {
+    return res.status(400).json({ error: "Enter a 12-digit account number or numeric customer ID" });
   }
 
   const fromAccount = await Account.findByPk(fromAccountId);
@@ -581,13 +584,25 @@ router.post("/transfers/validate-destination", requireAuth, asyncHandler(async (
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const destination = await Account.findOne({
-    where: { accountNumber },
-    include: [{ model: Customer, attributes: ["id", "fullName"] }],
-  });
+  let destination = null;
+  if (/^\d{12}$/.test(destinationInput)) {
+    destination = await Account.findOne({
+      where: { accountNumber: destinationInput },
+      include: [{ model: Customer, attributes: ["id", "fullName"] }],
+    });
+  } else {
+    destination = await Account.findOne({
+      where: {
+        customerId: Number(destinationInput),
+        status: { [Op.notIn]: ["frozen", "suspended", "closed"] },
+      },
+      include: [{ model: Customer, attributes: ["id", "fullName"] }],
+      order: [["createdAt", "ASC"]],
+    });
+  }
 
   if (!destination) {
-    return res.status(404).json({ error: "Destination account not found" });
+    return res.status(404).json({ error: "Destination account/customer not found" });
   }
   if (destination.id === fromAccount.id) {
     return res.status(400).json({ error: "Destination account must be different from source account" });
