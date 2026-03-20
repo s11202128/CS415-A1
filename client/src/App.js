@@ -30,6 +30,7 @@ export default function App() {
   const [accounts, setAccounts] = useState([]);
   const [customerTransactions, setCustomerTransactions] = useState([]);
   const [scheduledBills, setScheduledBills] = useState([]);
+  const [billHistory, setBillHistory] = useState([]);
   const [loanProducts, setLoanProducts] = useState([]);
   const [loanApplications, setLoanApplications] = useState([]);
   const [summaries, setSummaries] = useState([]);
@@ -133,10 +134,11 @@ export default function App() {
     setLoading(true);
     setError("");
     try {
-      const [customerRows, accountRows, scheduled, products, apps, invs, rate, sumRows, statementRequestRows] = await Promise.all([
+      const [customerRows, accountRows, scheduled, billHistoryRows, products, apps, invs, rate, sumRows, statementRequestRows] = await Promise.all([
         api.getCustomers(),
         api.getAccounts(),
         api.getScheduledBills(),
+        api.getBillHistory(),
         api.getLoanProducts(),
         api.getLoanApplications(),
         api.getInterestRate(),
@@ -165,6 +167,15 @@ export default function App() {
       setLoanApplications(visibleLoanApplications);
       setInterestRate(rate.reserveBankMinSavingsInterestRate);
       setSummaries(visibleSummaries);
+      setBillHistory(
+        hasAdminScope
+          ? billHistoryRows
+          : billHistoryRows.filter((b) => {
+              const byCustomer = b.customerId && String(b.customerId) === String(currentUser?.customerId);
+              const byAccount = b.accountId && visibleAccounts.some((a) => String(a.id) === String(b.accountId));
+              return byCustomer || byAccount;
+            })
+      );
       setStatementRequests(statementRequestRows);
       setLastUpdatedAt(new Date().toISOString());
       if (hasAdminScope) {
@@ -807,7 +818,7 @@ export default function App() {
               scheduleBillForm={scheduleBillForm}
               setScheduleBillForm={setScheduleBillForm}
               onScheduleBill={onScheduleBill}
-              scheduledBills={scheduledBills}
+              billHistory={billHistory}
               runScheduledBill={runScheduledBill}
               billMessage={billMessage}
             />

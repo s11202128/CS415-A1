@@ -8,7 +8,7 @@ export default function BillPaymentsTab({
   scheduleBillForm,
   setScheduleBillForm,
   onScheduleBill,
-  scheduledBills,
+  billHistory,
   runScheduledBill,
   billMessage,
 }) {
@@ -127,21 +127,21 @@ export default function BillPaymentsTab({
               </tr>
             </thead>
             <tbody>
-              {scheduledBills.length === 0 ? (
+              {billHistory.length === 0 ? (
                 <tr>
                   <td colSpan="7">No bill history available.</td>
                 </tr>
               ) : (
-                scheduledBills.map((b) => (
+                billHistory.map((b) => (
                   <tr key={b.id}>
                     <td>{b.id}</td>
-                    <td>{b.accountId}</td>
+                    <td>{b.accountId || "-"}</td>
                     <td>{b.payee}</td>
                     <td>FJD {b.amount.toFixed(2)}</td>
-                    <td>{b.scheduledDate}</td>
+                    <td>{b.scheduledDate || b.createdAt}</td>
                     <td>{b.status}</td>
                     <td>
-                      <button disabled={b.status === "processed"} onClick={() => runScheduledBill(b.id)}>
+                      <button disabled={b.status !== "scheduled"} onClick={() => runScheduledBill(b.id)}>
                         Run
                       </button>
                     </td>

@@ -11,6 +11,16 @@ const Transaction = sequelize.define('Transaction', {
     type: DataTypes.BIGINT.UNSIGNED,
     allowNull: false,
   },
+  accountNumber: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      is: {
+        args: /^\d{12}$/,
+        msg: 'Reenter 12 digit number',
+      },
+    },
+  },
   type: {
     type: DataTypes.STRING,
     allowNull: false,

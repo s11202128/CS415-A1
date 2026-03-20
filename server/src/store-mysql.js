@@ -223,6 +223,7 @@ async function createTransaction({ accountId, accountNumber, kind, amount, descr
 
   // Create transaction record
   const tx = await Transaction.create({
+    accountId: account.id,
     accountNumber: account.accountNumber,
     type: kind,
     amount: Math.abs(amount),
@@ -472,7 +473,7 @@ async function postBillPayment({ accountId, payee, amount, mode, scheduledDate }
     billType: payee,
     amount,
     status: "paid",
-    description: `Payment via ${mode}`,
+    description: `account:${accountId};mode:${mode}`,
     dueDate: scheduledDate || null,
   });
 

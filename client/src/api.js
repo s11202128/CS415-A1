@@ -131,6 +131,7 @@ export const api = {
   payBillManual: (body) => request("/bills/manual", { method: "POST", body: JSON.stringify(body) }),
   scheduleBill: (body) => request("/bills/scheduled", { method: "POST", body: JSON.stringify(body) }),
   getScheduledBills: () => request("/bills/scheduled"),
+  getBillHistory: () => request("/bills/history"),
   runScheduledBill: (id) => request(`/bills/scheduled/${id}/run`, { method: "POST" }),
   getStatement: (accountId) => request(`/statements/${accountId}`),
   createStatementRequest: (body) => request("/statements/request", { method: "POST", body: JSON.stringify(body) }),

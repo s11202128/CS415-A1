@@ -172,6 +172,15 @@ function parseScheduledAccountId(description) {
   return match ? Number(match[1]) : null;
 }
 
+function parseBillAccountId(description) {
+  const text = String(description || "");
+  const directMatch = text.match(/account:(\d+)/i);
+  if (directMatch) {
+    return Number(directMatch[1]);
+  }
+  return parseScheduledAccountId(text);
+}
+
 async function mapTransactionRows(rows) {
   const accountNumbers = Array.from(new Set(rows.map((row) => String(row.accountNumber || "")).filter(Boolean)));
   const accounts = accountNumbers.length
@@ -534,6 +543,7 @@ router.post("/admin/deposits", asyncHandler(async (req, res) => {
     await Transaction.create(
       {
         accountId: account.id,
+        accountNumber: account.accountNumber,
         type: "credit",
         amount,
         description,
@@ -594,6 +604,46 @@ router.get("/transactions", asyncHandler(async (req, res) => {
     ...row,
     counterpartyAccountId: null,
   })));
+}));
+
+router.post("/transfers/validate-destination", requireAuth, asyncHandler(async (req, res) => {
+  const fromAccountId = Number(req.body?.fromAccountId);
+  const toAccountNumber = String(req.body?.toAccountNumber || "").trim();
+
+  if (!Number.isFinite(fromAccountId) || fromAccountId <= 0) {
+    return res.status(400).json({ error: "Valid fromAccountId is required" });
+  }
+  if (!/^\d{12}$/.test(toAccountNumber)) {
+    return res.status(400).json({ error: "Destination account number must be 12 digits" });
+  }
+
+  const fromAccount = await Account.findByPk(fromAccountId);
+  if (!fromAccount) {
+    return res.status(404).json({ error: "Source account not found" });
+  }
+  if (!isAdmin(req) && fromAccount.customerId !== getAuthenticatedCustomerId(req)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  const destination = await Account.findOne({
+    where: { accountNumber: toAccountNumber },
+    include: [{ model: Customer, attributes: ["id", "fullName"] }],
+  });
+  if (!destination) {
+    return res.status(404).json({ error: "Destination account not found" });
+  }
+  if (String(fromAccount.accountNumber) === String(destination.accountNumber)) {
+    return res.status(400).json({ error: "Transfer accounts must be different" });
+  }
+  if (["frozen", "suspended", "closed"].includes(String(destination.status || "").toLowerCase())) {
+    return res.status(400).json({ error: "Destination account is not available for transfers" });
+  }
+
+  res.json({
+    accountNumber: destination.accountNumber,
+    customerId: destination.customerId,
+    customerName: destination.Customer?.fullName || destination.accountHolder || "Unknown customer",
+  });
 }));
 
 router.post("/transfers/initiate", requireAuth, asyncHandler(async (req, res) => {
@@ -869,6 +919,24 @@ router.get("/bills/scheduled", asyncHandler(async (req, res) => {
       scheduledDate: b.dueDate,
       status: "scheduled",
       createdAt: b.createdAt,
+    }))
+  );
+}));
+
+router.get("/bills/history", requireAuth, asyncHandler(async (req, res) => {
+  const where = isAdmin(req) ? undefined : { customerId: getAuthenticatedCustomerId(req) };
+  const rows = await Bill.findAll({ where, order: [["createdAt", "DESC"]], limit: 500 });
+  res.json(
+    rows.map((b) => ({
+      id: b.id,
+      accountId: parseBillAccountId(b.description),
+      customerId: b.customerId,
+      payee: b.billType,
+      amount: Number(b.amount),
+      scheduledDate: b.dueDate,
+      status: b.status === "paid" ? "processed" : b.status,
+      createdAt: b.createdAt,
+      description: b.description,
     }))
   );
 }));
@@ -1335,6 +1403,7 @@ router.patch("/admin/loan-applications/:id", asyncHandler(async (req, res) => {
       await Transaction.create(
         {
           accountId: destinationAccount.id,
+          accountNumber: destinationAccount.accountNumber,
           type: "credit",
           amount: principalAmount,
           description: `Loan disbursement for application #${loan.id}`,
