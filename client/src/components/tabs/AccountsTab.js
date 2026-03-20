@@ -2,12 +2,28 @@ import { useState } from "react";
 import { api } from "../../api";
 
 const ACCOUNT_SECTIONS = ["Summary", "My Accounts", "Open Account"];
+const DEFAULT_ACCOUNT_TYPE_DETAILS = { desc: "Unknown type", fee: "N/A", interest: "N/A", bestFor: "N/A" };
+const ACCOUNT_TYPE_DETAILS = {
+  cheque: {
+    desc: "Everyday transaction account for payments and transfers",
+    fee: "FJD 2.50/month",
+    interest: "None",
+    bestFor: "Daily transactions and cheque access",
+  },
+  savings: {
+    desc: "Interest-bearing savings account",
+    fee: "None",
+    interest: "3.25% p.a.",
+    bestFor: "Building savings with interest",
+  },
+};
 
 export default function AccountsTab({
   accounts,
   currentUser,
   accountMessage,
   setAccountMessage,
+  createAccountRequest = api.createAccountRequest,
 }) {
   const [activeSection, setActiveSection] = useState("Summary");
   const [newAccountForm, setNewAccountForm] = useState({
@@ -31,7 +47,7 @@ export default function AccountsTab({
       return;
     }
     try {
-      const createdRequest = await api.createAccountRequest({
+      const createdRequest = await createAccountRequest({
         customerId: Number(activeCustomerId),
         type: newAccountForm.type,
         accountNumber: newAccountForm.accountNumber || undefined,
@@ -47,25 +63,11 @@ export default function AccountsTab({
   };
 
   const getAccountTypeDescription = (type) => {
-    switch (type) {
-      case "Simple Access":
-      case "Cheque":
-        return {
-          desc: "Everyday transaction account for payments and transfers",
-          fee: "FJD 2.50/month",
-          interest: "None",
-          bestFor: "Daily transactions and cheque access",
-        };
-      case "Savings":
-        return {
-          desc: "Interest-bearing savings account",
-          fee: "None",
-          interest: "3.25% p.a.",
-          bestFor: "Building savings with interest",
-        };
-      default:
-        return { desc: "Unknown type", fee: "N/A", interest: "N/A", bestFor: "N/A" };
+    const normalizedType = String(type || "").toLowerCase();
+    if (normalizedType === "simple access" || normalizedType === "cheque") {
+      return ACCOUNT_TYPE_DETAILS.cheque;
     }
+    return ACCOUNT_TYPE_DETAILS[normalizedType] || DEFAULT_ACCOUNT_TYPE_DETAILS;
   };
 
   const accountStats = userAccounts.reduce(

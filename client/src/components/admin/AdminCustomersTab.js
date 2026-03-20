@@ -4,66 +4,34 @@ export default function AdminCustomersTab({ customers, accounts = [], onAdminUpd
   const [tinInputs, setTinInputs] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
 
-  const customerAccountNumbers = useMemo(() => {
+  const customerAccountData = useMemo(() => {
     return accounts.reduce((map, account) => {
       const customerId = String(account.customerId || "");
       if (!customerId) {
         return map;
       }
       if (!map[customerId]) {
-        map[customerId] = [];
+        map[customerId] = {
+          numbers: [],
+          ids: [],
+          types: [],
+          balances: [],
+        };
       }
-      if (account.accountNumber) {
-        map[customerId].push(String(account.accountNumber));
-      }
-      return map;
-    }, {});
-  }, [accounts]);
 
-  const customerAccountIds = useMemo(() => {
-    return accounts.reduce((map, account) => {
-      const customerId = String(account.customerId || "");
-      if (!customerId) {
-        return map;
-      }
-      if (!map[customerId]) {
-        map[customerId] = [];
+      if (account.accountNumber) {
+        map[customerId].numbers.push(String(account.accountNumber));
       }
       if (account.id !== undefined && account.id !== null) {
-        map[customerId].push(String(account.id));
-      }
-      return map;
-    }, {});
-  }, [accounts]);
-
-  const customerAccountTypes = useMemo(() => {
-    return accounts.reduce((map, account) => {
-      const customerId = String(account.customerId || "");
-      if (!customerId) {
-        return map;
-      }
-      if (!map[customerId]) {
-        map[customerId] = [];
+        map[customerId].ids.push(String(account.id));
       }
       if (account.type) {
-        map[customerId].push(String(account.type));
+        map[customerId].types.push(String(account.type));
       }
-      return map;
-    }, {});
-  }, [accounts]);
 
-  const customerAccountBalances = useMemo(() => {
-    return accounts.reduce((map, account) => {
-      const customerId = String(account.customerId || "");
-      if (!customerId) {
-        return map;
-      }
-      if (!map[customerId]) {
-        map[customerId] = [];
-      }
       const parsedBalance = Number(account.balance);
       const balanceLabel = Number.isFinite(parsedBalance) ? `FJD ${parsedBalance.toFixed(2)}` : "FJD 0.00";
-      map[customerId].push(balanceLabel);
+      map[customerId].balances.push(balanceLabel);
       return map;
     }, {});
   }, [accounts]);
@@ -73,11 +41,13 @@ export default function AdminCustomersTab({ customers, accounts = [], onAdminUpd
     if (!query) {
       return true;
     }
-    const accountNumbers = customerAccountNumbers[String(customer.id)] || [];
-    const accountIds = customerAccountIds[String(customer.id)] || [];
-    const accountTypes = customerAccountTypes[String(customer.id)] || [];
-    const accountBalances = customerAccountBalances[String(customer.id)] || [];
-    return [customer.fullName, customer.email, customer.mobile, customer.nationalId, ...accountNumbers, ...accountIds, ...accountTypes, ...accountBalances]
+    const accountEntry = customerAccountData[String(customer.id)] || {
+      numbers: [],
+      ids: [],
+      types: [],
+      balances: [],
+    };
+    return [customer.fullName, customer.email, customer.mobile, customer.nationalId, ...accountEntry.numbers, ...accountEntry.ids, ...accountEntry.types, ...accountEntry.balances]
       .some((value) => String(value || "").toLowerCase().includes(query));
   });
 
@@ -117,17 +87,19 @@ export default function AdminCustomersTab({ customers, accounts = [], onAdminUpd
           </thead>
           <tbody>
             {filteredCustomers.map((c) => {
-              const accountNumbers = customerAccountNumbers[String(c.id)] || [];
-              const accountIds = customerAccountIds[String(c.id)] || [];
-              const accountTypes = customerAccountTypes[String(c.id)] || [];
-              const accountBalances = customerAccountBalances[String(c.id)] || [];
+              const accountEntry = customerAccountData[String(c.id)] || {
+                numbers: [],
+                ids: [],
+                types: [],
+                balances: [],
+              };
               return (
                 <tr key={c.id}>
                   <td className="monospace">{c.id}</td>
-                  <td className="monospace">{accountNumbers.length ? accountNumbers.join(", ") : "-"}</td>
-                  <td className="monospace">{accountIds.length ? accountIds.join(", ") : "-"}</td>
-                  <td>{accountTypes.length ? accountTypes.join(", ") : "-"}</td>
-                  <td>{accountBalances.length ? accountBalances.join(", ") : "-"}</td>
+                  <td className="monospace">{accountEntry.numbers.length ? accountEntry.numbers.join(", ") : "-"}</td>
+                  <td className="monospace">{accountEntry.ids.length ? accountEntry.ids.join(", ") : "-"}</td>
+                  <td>{accountEntry.types.length ? accountEntry.types.join(", ") : "-"}</td>
+                  <td>{accountEntry.balances.length ? accountEntry.balances.join(", ") : "-"}</td>
                   <td>{c.fullName}</td>
                   <td>{c.email}</td>
                   <td className="monospace">{c.mobile}</td>

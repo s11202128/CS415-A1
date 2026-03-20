@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { api, clearToken, setToken } from "./api";
+import { api, setToken } from "./api";
+import { useAuth } from "./hooks/useAuth";
+import { useAdminPoll } from "./hooks/useAdminPoll";
+import { filterDataByScope } from "./utils/dataFilters";
 import { tabs } from "./constants/tabs";
 import AuthPage from "./components/AuthPage";
 import BankBrand from "./components/BankBrand";
@@ -21,8 +24,8 @@ export default function App() {
   const [error, setError] = useState("");
   const [lastUpdatedAt, setLastUpdatedAt] = useState(() => new Date().toISOString());
 
-  const [authToken, setAuthToken] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
+  // SRP: auth state and token management extracted to useAuth hook (DIP)
+  const { authToken, currentUser, setCurrentUser, setAuth, clearAuth } = useAuth();
   const [customers, setCustomers] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [customerTransactions, setCustomerTransactions] = useState([]);
@@ -140,37 +143,20 @@ export default function App() {
         api.getSummaries(),
         api.getStatementRequests(),
       ]);
-      
+
       const hasAdminScope = Boolean(currentUser?.isAdmin || (showAdmin && adminAccessGranted));
-      const activeCustomerId = currentUser?.customerId;
 
-      const visibleCustomers = hasAdminScope
-        ? customerRows
-        : customerRows.filter((c) => String(c.id) === String(activeCustomerId));
-
-      const visibleCustomerIds = new Set(visibleCustomers.map((c) => String(c.id)));
-
-      const visibleAccounts = hasAdminScope
-        ? accountRows
-        : accountRows.filter((a) => visibleCustomerIds.has(String(a.customerId)));
-
-      const visibleAccountIds = new Set(visibleAccounts.map((a) => String(a.id)));
-
-      const visibleScheduledBills = hasAdminScope
-        ? scheduled
-        : scheduled.filter((b) => {
-          const byAccount = b.accountId && visibleAccountIds.has(String(b.accountId));
-          const byCustomer = b.customerId && visibleCustomerIds.has(String(b.customerId));
-          return byAccount || byCustomer;
-        });
-
-      const visibleLoanApplications = hasAdminScope
-        ? apps
-        : apps.filter((l) => visibleCustomerIds.has(String(l.customerId)));
-
-      const visibleSummaries = hasAdminScope
-        ? sumRows
-        : sumRows.filter((s) => visibleCustomerIds.has(String(s.customerId)));
+      // OCP/SRP: data scoping extracted to filterDataByScope utility
+      const {
+        customers: visibleCustomers,
+        accounts: visibleAccounts,
+        scheduledBills: visibleScheduledBills,
+        loanApplications: visibleLoanApplications,
+        summaries: visibleSummaries,
+      } = filterDataByScope(
+        { customers: customerRows, accounts: accountRows, bills: scheduled, loans: apps, summaries: sumRows },
+        { hasAdminScope, activeCustomerId: currentUser?.customerId }
+      );
 
       setCustomers(visibleCustomers);
       setAccounts(visibleAccounts);
@@ -251,48 +237,22 @@ export default function App() {
     api.getNotifications(notificationCustomer).then(setNotifications).catch((err) => setError(err.message));
   }, [notificationCustomer]);
 
-  useEffect(() => {
-    const hasAdminAccess = currentUser?.isAdmin || adminAccessGranted;
-    if (!hasAdminAccess || !showAdmin) {
-      return;
-    }
-    let cancelled = false;
-    const refreshAdminData = async () => {
-      const selected = accounts.find((a) => String(a.id) === String(selectedAccountForTx));
-      const accountNumber = selectedAccountForTx ? (selected?.accountNumber || "") : "";
-      try {
-        const [txRows, loginLogRows, notificationLogRows, limit, report, statementReqRows] = await Promise.all([
-          api.getAdminTransactions(accountNumber),
-          api.getAdminLoginLogs(100),
-          api.getNotificationLogsAdmin(100),
-          api.getTransferLimitAdmin(),
-          api.getAdminDashboardReport(),
-          api.getAdminStatementRequests(),
-        ]);
-        if (cancelled) {
-          return;
-        }
-        setAdminTransactions(txRows);
-        setAdminLoginLogs(loginLogRows);
-        setAdminNotificationLogs(notificationLogRows);
-        setAdminTransferLimit(Number(limit.highValueTransferLimit || 1000));
-        setAdminReport(report);
-        setAdminStatementRequests(statementReqRows);
-        setAdminLastUpdated(new Date().toISOString());
-      } catch (err) {
-        if (!cancelled) {
-          setAdminMessage(err.message);
-        }
-      }
-    };
-
-    refreshAdminData();
-    const timer = setInterval(refreshAdminData, 10000);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [showAdmin, currentUser?.isAdmin, adminAccessGranted, selectedAccountForTx, accounts]);
+  // SRP: admin polling concern extracted to useAdminPoll hook
+  useAdminPoll({
+    enabled: Boolean((currentUser?.isAdmin || adminAccessGranted) && showAdmin),
+    accounts,
+    selectedAccountForTx,
+    onData: ({ txRows, loginLogRows, notificationLogRows, limit, report, statementReqRows }) => {
+      setAdminTransactions(txRows);
+      setAdminLoginLogs(loginLogRows);
+      setAdminNotificationLogs(notificationLogRows);
+      setAdminTransferLimit(Number(limit.highValueTransferLimit || 1000));
+      setAdminReport(report);
+      setAdminStatementRequests(statementReqRows);
+      setAdminLastUpdated(new Date().toISOString());
+    },
+    onError: (msg) => setAdminMessage(msg),
+  });
 
   const totalBalance = accounts.filter(a => a.status === "active").reduce((sum, a) => sum + a.balance, 0);
   const currentYear = new Date().getFullYear();
@@ -305,15 +265,12 @@ export default function App() {
 
   // ── Auth handlers ────────────────────────────────────────────────────────
   function handleLoginSuccess(token, user) {
-    setAuthToken(token);
-    setCurrentUser(user);
+    setAuth(token, user);
     setShowAdmin(Boolean(user?.isAdmin));
   }
 
   function onLogout() {
-    clearToken();
-    setAuthToken(null);
-    setCurrentUser(null);
+    clearAuth();
     setCustomerTransactions([]);
     setStatementRows([]);
     setStatementRequested(false);
@@ -656,7 +613,7 @@ export default function App() {
     setAdminAuthMessage("");
     try {
       const result = await api.login(adminAuthForm);
-      setToken(result.token);
+      setToken(result.token); // persist token in api layer before login handler
       handleLoginSuccess(result.token, {
         fullName: result.fullName,
         userId: result.userId,
