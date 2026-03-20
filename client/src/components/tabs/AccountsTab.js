@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../../api";
 
-const ACCOUNT_SECTIONS = ["Summary", "My Accounts", "Open Account", "Account Types", "Tips"];
+const ACCOUNT_SECTIONS = ["Summary", "My Accounts", "Open Account"];
 
 export default function AccountsTab({
   accounts,
@@ -12,7 +12,6 @@ export default function AccountsTab({
   const [activeSection, setActiveSection] = useState("Summary");
   const [newAccountForm, setNewAccountForm] = useState({
     type: "Savings",
-    openingBalance: "0",
     accountNumber: "",
   });
   const [latestRequest, setLatestRequest] = useState(null);
@@ -35,12 +34,11 @@ export default function AccountsTab({
       const createdRequest = await api.createAccountRequest({
         customerId: Number(activeCustomerId),
         type: newAccountForm.type,
-        openingBalance: Number(newAccountForm.openingBalance || 0),
         accountNumber: newAccountForm.accountNumber || undefined,
       });
       setLatestRequest(createdRequest);
       setAccountMessage("✅ Account request submitted. It will be activated after admin approval.");
-      setNewAccountForm({ type: "Savings", openingBalance: "0", accountNumber: "" });
+      setNewAccountForm({ type: "Savings", accountNumber: "" });
       // Refresh would be done by parent component
       setTimeout(() => setAccountMessage(""), 3000);
     } catch (err) {
@@ -99,6 +97,7 @@ export default function AccountsTab({
 
           {activeSection === "Summary" && (
             <>
+              <h2>Account Summary</h2>
               <div className="account-summary">
                 <div className="summary-item">
                   <span className="label">Total Accounts:</span>
@@ -118,61 +117,64 @@ export default function AccountsTab({
           )}
 
           {activeSection === "My Accounts" && (
-            userAccounts.length === 0 ? (
-              <p className="no-data">You have no accounts yet. Open a new account to get started.</p>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Account #</th>
-                    <th>Account Holder</th>
-                    <th>Type</th>
-                    <th>Balance</th>
-                    <th>Fee/Interest</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {userAccounts.map((a) => {
-                    const typeInfo = getAccountTypeDescription(a.type);
-                    return (
-                      <tr key={a.id} className={`account-row account-${a.status}`}>
-                        <td className="account-number">{a.accountNumber}</td>
-                        <td>{a.accountHolder || currentUser?.fullName || "N/A"}</td>
-                        <td>
-                          <div>
-                            <strong>{a.type === "Simple Access" ? "Cheque" : a.type}</strong>
-                            <p className="hint">{typeInfo.desc}</p>
-                          </div>
-                        </td>
-                        <td className="balance">
-                          {a.status === "active" ? (
-                            <strong>FJD {Number(a.balance).toFixed(2)}</strong>
-                          ) : (
-                            <span className="balance-pending" title="Awaiting admin approval">—</span>
-                          )}
-                        </td>
-                        <td className="fee-interest">
-                          <div>
-                            <p>💰 {typeInfo.interest}</p>
-                            <p>💳 {typeInfo.fee}</p>
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`status-badge status-${a.status}`}>
-                            {a.status}
-                          </span>
-                        </td>
-                        <td className="date">
-                          {new Date(a.createdAt).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )
+            <>
+              <h2>My Accounts</h2>
+              {userAccounts.length === 0 ? (
+                <p className="no-data">You have no accounts yet. Open a new account to get started.</p>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Account #</th>
+                      <th>Account Holder</th>
+                      <th>Type</th>
+                      <th>Balance</th>
+                      <th>Fee/Interest</th>
+                      <th>Status</th>
+                      <th>Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {userAccounts.map((a) => {
+                      const typeInfo = getAccountTypeDescription(a.type);
+                      return (
+                        <tr key={a.id} className={`account-row account-${a.status}`}>
+                          <td className="account-number">{a.accountNumber}</td>
+                          <td>{a.accountHolder || currentUser?.fullName || "N/A"}</td>
+                          <td>
+                            <div>
+                              <strong>{a.type === "Simple Access" ? "Cheque" : a.type}</strong>
+                              <p className="hint">{typeInfo.desc}</p>
+                            </div>
+                          </td>
+                          <td className="balance">
+                            {a.status === "active" ? (
+                              <strong>FJD {Number(a.balance).toFixed(2)}</strong>
+                            ) : (
+                              <span className="balance-pending" title="Awaiting admin approval">—</span>
+                            )}
+                          </td>
+                          <td className="fee-interest">
+                            <div>
+                              <p>💰 {typeInfo.interest}</p>
+                              <p>💳 {typeInfo.fee}</p>
+                            </div>
+                          </td>
+                          <td>
+                            <span className={`status-badge status-${a.status}`}>
+                              {a.status}
+                            </span>
+                          </td>
+                          <td className="date">
+                            {new Date(a.createdAt).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </>
           )}
 
           {activeSection === "Open Account" && (
@@ -192,16 +194,6 @@ export default function AccountsTab({
                     <option value="Simple Access">Cheque</option>
                     <option value="Savings">Savings</option>
                   </select>
-                </label>
-                <label>
-                  Opening Balance
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newAccountForm.openingBalance}
-                    onChange={(e) => setNewAccountForm({ ...newAccountForm, openingBalance: e.target.value })}
-                  />
                 </label>
                 <label>
                   Account Number (optional — 12 digits)
@@ -228,38 +220,6 @@ export default function AccountsTab({
                 </div>
               )}
             </>
-          )}
-
-          {activeSection === "Account Types" && (
-            <div className="account-types-grid">
-              {["Cheque", "Savings"].map((type) => {
-                const info = getAccountTypeDescription(type);
-                return (
-                  <div key={type} className="account-type-card">
-                    <h3>{type}</h3>
-                    <p className="description">{info.desc}</p>
-                    <dl>
-                      <dt>Monthly Fee:</dt>
-                      <dd>{info.fee}</dd>
-                      <dt>Annual Interest:</dt>
-                      <dd>{info.interest}</dd>
-                      <dt>Best For:</dt>
-                      <dd>{info.bestFor}</dd>
-                    </dl>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {activeSection === "Tips" && (
-            <ul className="tips-list">
-              <li><strong>Cheque Account:</strong> Pay FJD 2.50 per month for instant access to funds.</li>
-              <li><strong>Savings Account:</strong> Earn 3.25% annual interest on your balance.</li>
-              <li><strong>Multiple Accounts:</strong> You can open multiple accounts for organization.</li>
-              <li><strong>Transfers:</strong> Move money between your own accounts instantly.</li>
-              <li><strong>Account Number:</strong> Always required for receiving transfers from others.</li>
-            </ul>
           )}
 
         </div>

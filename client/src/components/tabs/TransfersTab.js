@@ -75,6 +75,7 @@ export default function TransfersTab({
   setPendingTransfer,
   onVerifyTransfer,
   transferMessage,
+  setTransferMessage,
 }) {
   const [open, setOpen] = useState(true);
   const [activeOption, setActiveOption] = useState("bof-customer-transfer");
@@ -86,6 +87,9 @@ export default function TransfersTab({
   });
   const [localBankForm, setLocalBankForm] = useState({ recipientName: "", accountNumber: "", bankName: "", amount: "", description: "" });
   const [localBankMessage, setLocalBankMessage] = useState("");
+  const [otpInput, setOtpInput] = useState("");
+  const [transferSuccess, setTransferSuccess] = useState(null);
+  const [lastCompletedTransfer, setLastCompletedTransfer] = useState(null);
 
   const activeTransferOption = TRANSFER_OPTIONS.find((option) => option.id === activeOption) || TRANSFER_OPTIONS[0];
 
@@ -197,6 +201,34 @@ export default function TransfersTab({
     }
   }, [showTransferForm, showLocalBankForm, sourceAccount, transferForm.fromAccountId, setTransferForm]);
 
+  useEffect(() => {
+    if (transferMessage && transferMessage.includes("Transfer completed successfully")) {
+      setTransferSuccess({
+        message: "Transfer Completed Successfully",
+        amount: currentTransferAmount,
+        toAccount: destinationValidation.customerName,
+        timestamp: new Date().toLocaleTimeString(),
+      });
+      setLastCompletedTransfer({
+        amount: currentTransferAmount,
+        toAccount: destinationValidation.customerName,
+        toAccountNumber: normalizedToAccountNumber,
+      });
+    } else if (transferMessage && transferMessage.includes("OTP verified and transfer completed")) {
+      setTransferSuccess({
+        message: "Transfer Completed Successfully",
+        amount: currentTransferAmount,
+        toAccount: destinationValidation.customerName,
+        timestamp: new Date().toLocaleTimeString(),
+      });
+      setLastCompletedTransfer({
+        amount: currentTransferAmount,
+        toAccount: destinationValidation.customerName,
+        toAccountNumber: normalizedToAccountNumber,
+      });
+    }
+  }, [transferMessage, currentTransferAmount, destinationValidation.customerName, normalizedToAccountNumber]);
+
   async function handleSendTransfer(e) {
     e.preventDefault();
 
@@ -265,7 +297,37 @@ export default function TransfersTab({
 
   function handleLocalBankSubmit(e) {
     e.preventDefault();
-    setLocalBankMessage("Local bank transfer submitted. Processing may take 1\u20133 business days.");
+    setLocalBankMessage("Local bank transfer submitted. Processing may take 1–3 business days.");
+  }
+
+  function handleAnotherTransaction() {
+    setTransferSuccess(null);
+    if (setTransferMessage) setTransferMessage("");
+    setTransferForm({
+      fromAccountId: sourceAccount?.id || "",
+      toAccountNumber: "",
+      amount: "",
+      description: "",
+    });
+    setDestinationValidation({ status: "idle", customerName: "", accountNumber: "", message: "" });
+    setLocalBankMessage("");
+    setOtpInput("");
+  }
+
+  function handleExitTransaction() {
+    setTransferSuccess(null);
+    setLastCompletedTransfer(null);
+    if (setTransferMessage) setTransferMessage("");
+    setTransferForm({
+      fromAccountId: sourceAccount?.id || "",
+      toAccountNumber: "",
+      amount: "",
+      description: "",
+    });
+    setDestinationValidation({ status: "idle", customerName: "", accountNumber: "", message: "" });
+    setLocalBankMessage("");
+    setOtpInput("");
+    setActiveOption("bof-customer-transfer");
   }
 
   return (
@@ -291,8 +353,71 @@ export default function TransfersTab({
             <p className="status error">No account found. You cannot transfer funds until you open an account.</p>
           )}
 
-        {showTransferForm ? (
+        {transferSuccess ? (
+          <div style={{ textAlign: "center", padding: "20px" }}>
+            <div className="status success" style={{ fontSize: "16px", marginBottom: "20px" }}>
+              ✓ {transferSuccess.message}
+            </div>
+            <div style={{ background: "#f5f7fa", padding: "20px", borderRadius: "8px", marginBottom: "20px" }}>
+              <p style={{ margin: "10px 0" }}>
+                <strong>Amount:</strong> FJD {transferSuccess.amount.toLocaleString()}
+              </p>
+              <p style={{ margin: "10px 0" }}>
+                <strong>Recipient:</strong> {transferSuccess.toAccount}
+              </p>
+              <p style={{ margin: "10px 0" }}>
+                <strong>Completed at:</strong> {transferSuccess.timestamp}
+              </p>
+            </div>
+            <p style={{ fontSize: "14px", color: "#666", marginBottom: "20px" }}>
+              Would you like to perform another transaction?
+            </p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+              <button 
+                type="button"
+                onClick={handleAnotherTransaction}
+                style={{ flex: 1, maxWidth: "200px" }}
+              >
+                Another Transfer
+              </button>
+              <button 
+                type="button"
+                onClick={handleExitTransaction}
+                style={{ flex: 1, maxWidth: "200px", background: "#e0e0e0", color: "#333" }}
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+        ) : showTransferForm ? (
           <form onSubmit={handleSendTransfer}>
+            <div className="transfer-from-row">
+              <label>
+                From Account
+                <select
+                  value={transferForm.fromAccountId || ""}
+                  onChange={(e) => setTransferForm({ ...transferForm, fromAccountId: e.target.value })}
+                  required
+                >
+                  <option value="" disabled>Select account to transfer from</option>
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.id} - {account.accountNumber}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {sourceAccount && (
+                <p className="transfer-selected-balance">
+                  Balance: <strong>FJD {Number(sourceAccount.balance || 0).toLocaleString()}</strong>
+                </p>
+              )}
+            </div>
+            {sourceAccount && (
+              <p className="hint">
+                Status: <strong>{sourceAccount.status || "active"}</strong>
+              </p>
+            )}
             <label>
               To Account Number
               <input
@@ -311,14 +436,17 @@ export default function TransfersTab({
             ) : null}
             <label>
               Amount (FJD)
-              <input
-                type="number"
-                min="1"
-                step="0.01"
-                value={transferForm.amount}
-                onChange={(e) => setTransferForm({ ...transferForm, amount: e.target.value })}
-                required
-              />
+              <div className="loan-currency-input">
+                <span className="loan-currency-prefix">$</span>
+                <input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  value={transferForm.amount}
+                  onChange={(e) => setTransferForm({ ...transferForm, amount: e.target.value })}
+                  required
+                />
+              </div>
             </label>
             <label>
               Reason of Transfer
@@ -328,7 +456,10 @@ export default function TransfersTab({
                 placeholder="Enter transfer reason"
               />
             </label>
-            <button type="submit" disabled={!sourceAccount || !hasAccounts}>
+            <button 
+              type="submit" 
+              disabled={!sourceAccount || !hasAccounts || !destinationIsValidated || !currentTransferAmount}
+            >
               Send Transfer
             </button>
           </form>
@@ -367,14 +498,17 @@ export default function TransfersTab({
             </label>
             <label>
               Amount (FJD)
-              <input
-                type="number"
-                min="1"
-                step="0.01"
-                value={localBankForm.amount}
-                onChange={(e) => setLocalBankForm({ ...localBankForm, amount: e.target.value })}
-                required
-              />
+              <div className="loan-currency-input">
+                <span className="loan-currency-prefix">$</span>
+                <input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  value={localBankForm.amount}
+                  onChange={(e) => setLocalBankForm({ ...localBankForm, amount: e.target.value })}
+                  required
+                />
+              </div>
             </label>
             <label>
               Reason of Transfer
@@ -444,6 +578,32 @@ export default function TransfersTab({
               Select a transfer option from the menu.
             </p>
           </div>
+        )}
+        {transferMessage && (
+          <p className={transferMessage.includes("error") || transferMessage.includes("Error") ? "status error" : "status success"}>
+            {transferMessage}
+          </p>
+        )}
+        {pendingTransfer.transferId && (
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            setPendingTransfer({ ...pendingTransfer, otp: otpInput });
+            onVerifyTransfer();
+            setOtpInput("");
+          }}>
+            <label>
+              Enter OTP
+              <input
+                type="text"
+                value={otpInput}
+                onChange={(e) => setOtpInput(e.target.value)}
+                placeholder="Enter 6-digit OTP"
+                maxLength="6"
+                required
+              />
+            </label>
+            <button type="submit">Verify OTP & Complete Transfer</button>
+          </form>
         )}
         </div>
       </article>

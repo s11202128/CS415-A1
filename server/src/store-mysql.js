@@ -8,7 +8,6 @@ const {
   Account,
   Transaction,
   Bill,
-  Investment,
   Loan,
   OtpVerification,
   Registration,
@@ -17,7 +16,7 @@ const {
   NotificationLog,
 } = require("./models");
 
-let HIGH_VALUE_OTP_THRESHOLD = 5000;
+let HIGH_VALUE_OTP_THRESHOLD = 10000;
 const MIN_OTP_TRIGGER_AMOUNT = 5000;
 const OTP_EXPIRY_MINUTES = 5;
 const OTP_MAX_ATTEMPTS = 3;
@@ -567,31 +566,6 @@ async function runScheduledPayment(id) {
   return { scheduled, payment };
 }
 
-// Create an investment
-async function createInvestment({ customerId, name, amount, annualRate }) {
-  const customer = await getCustomer(customerId);
-  if (!customer) {
-    throw new Error("Customer not found");
-  }
-
-  const investment = await Investment.create({
-    customerId,
-    investmentType: name,
-    amount,
-    expectedReturn: annualRate,
-    status: "active",
-  });
-
-  return {
-    id: investment.id,
-    customerId,
-    name,
-    amount,
-    annualRate,
-    createdAt: investment.createdAt,
-  };
-}
-
 // Generate statement for an account
 async function generateStatement(accountId, from, to) {
   const fromDate = from ? new Date(from) : null;
@@ -1064,7 +1038,6 @@ module.exports = {
   postBillPayment,
   scheduleBillPayment,
   runScheduledPayment,
-  createInvestment,
   generateStatement,
   generateInterestSummaries,
   applyMonthlyFees,
