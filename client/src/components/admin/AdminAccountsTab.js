@@ -7,6 +7,37 @@ export default function AdminAccountsTab({
   onAdminUpdateAccount,
   onAdminFreezeAccount,
 }) {
+  const sortedAccounts = [...accounts].sort((a, b) => Number(b.id || 0) - Number(a.id || 0));
+
+  const renderActions = (account) => {
+    const status = String(account.status || "").toLowerCase();
+
+    if (status === "pending_approval") {
+      return (
+        <>
+          <button type="button" onClick={() => onAdminUpdateAccount(account.id, { status: "active" })}>Approve</button>
+          <button type="button" onClick={() => onAdminUpdateAccount(account.id, { status: "rejected" })}>Reject</button>
+        </>
+      );
+    }
+
+    if (status === "frozen") {
+      return (
+        <button type="button" onClick={() => onAdminUpdateAccount(account.id, { status: "active" })}>Unfreeze</button>
+      );
+    }
+
+    if (status === "active") {
+      return (
+        <button type="button" onClick={() => onAdminFreezeAccount(account.id)}>Freeze</button>
+      );
+    }
+
+    return (
+      <button type="button" onClick={() => onAdminUpdateAccount(account.id, { status: "active" })}>Set Active</button>
+    );
+  };
+
   return (
     <section className="panel-grid">
       <article className="panel wide">
@@ -53,6 +84,52 @@ export default function AdminAccountsTab({
           <button type="submit">Create Account</button>
         </form>
         <p className="status">{adminAccountMessage}</p>
+      </article>
+
+      <article className="panel wide">
+        <h3>Manage Account Requests</h3>
+        {sortedAccounts.length === 0 ? (
+          <p className="hint">No accounts found.</p>
+        ) : (
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Account ID</th>
+                  <th>Account #</th>
+                  <th>Customer ID</th>
+                  <th>Holder</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Balance</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedAccounts.map((account) => (
+                  <tr key={account.id}>
+                    <td>{account.id}</td>
+                    <td>{account.accountNumber}</td>
+                    <td>{account.customerId}</td>
+                    <td>{account.accountHolder || "-"}</td>
+                    <td>{account.type}</td>
+                    <td>
+                      <span className={`status-badge status-${account.status}`}>
+                        {account.status}
+                      </span>
+                    </td>
+                    <td>FJD {Number(account.balance || 0).toFixed(2)}</td>
+                    <td>
+                      <div className="inline-controls">
+                        {renderActions(account)}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </article>
     </section>
   );
