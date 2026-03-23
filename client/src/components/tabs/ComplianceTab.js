@@ -25,7 +25,7 @@ export default function ComplianceTab({
 
   return (
     <section className="panel-grid">
-      <article className="panel wide">
+      <article className="panel wide compliance-dashboard">
         <nav className="acct-tab-bar">
           {["Interest Rate", "Tax Reports", "Tax Info", "Year Summary", "Tax Table", "Guidelines"].map((s) => (
             <button key={s} type="button" className={`acct-tab-btn${activeSection === s ? " active" : ""}`} onClick={() => setActiveSection(s)}>{s}</button>

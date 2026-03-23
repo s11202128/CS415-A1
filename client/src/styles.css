@@ -294,6 +294,12 @@ body::after {
   align-items: start;
 }
 
+.app-shell > .workspace-layout {
+  background: #5856bf;
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
 .left-tabs {
   position: sticky;
   top: 14px;
@@ -375,6 +381,10 @@ body::after {
 .admin-grid {
   display: grid;
   gap: 14px;
+  background: #5856bf;
+  color: #ffffff;
+  border-radius: var(--radius-md);
+  padding: 14px;
 }
 
 .panel {
@@ -426,6 +436,113 @@ body::after {
 
 .panel.wide {
   grid-column: span 12;
+}
+
+.admin-grid .left-tabs {
+  background: #e6e1e8;
+  border: 1px solid #cfc8d4;
+  box-shadow: none;
+}
+
+.admin-grid .panel {
+  background: #e6e1e8;
+  border: 1px solid #cfc8d4;
+  box-shadow: none;
+  color: #1f2430;
+}
+
+.admin-grid .panel::before {
+  background: rgba(143, 132, 156, 0.55);
+}
+
+.admin-grid .panel :is(h1, h2, h3, h4, p, label, .hint, .status, .metric) {
+  color: #1f2430;
+}
+
+.admin-grid input,
+.admin-grid select,
+.admin-grid textarea {
+  background: #ffffff;
+  color: #10233f;
+  border: 1px solid #b5cef6;
+}
+
+.admin-grid input::placeholder,
+.admin-grid textarea::placeholder {
+  color: #5f7393;
+}
+
+.admin-grid table {
+  background: #ffffff;
+  border-color: #b5cef6;
+}
+
+.admin-grid th,
+.admin-grid td {
+  color: #10233f;
+}
+
+.admin-grid .admin-tab {
+  background: #1f1026;
+  border-color: #3b2450;
+  color: #ffffff;
+}
+
+.admin-grid .admin-tab:hover {
+  background: #2c1736;
+  border-color: #ad03fc;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.admin-grid .admin-tab.active {
+  background: #1f1026;
+  border-color: #ad03fc;
+  color: #ffffff;
+}
+
+.app-shell > .workspace-layout > .left-tabs {
+  background: #e6e1e8;
+  border: 1px solid #cfc8d4;
+  box-shadow: none;
+}
+
+.app-shell > .workspace-layout > .left-tabs .tab {
+  background: #1f1026;
+  border-color: #3b2450;
+  color: #ffffff;
+}
+
+.app-shell > .workspace-layout > .left-tabs .tab:hover {
+  background: #2c1736;
+  border-color: #ad03fc;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.app-shell > .workspace-layout > .left-tabs .tab.active {
+  background: #1f1026;
+  border-color: #ad03fc;
+  color: #ffffff;
+}
+
+.app-shell > .workspace-layout > .tab-content .panel {
+  background: #e6e1e8;
+  border: 1px solid #cfc8d4;
+  box-shadow: none;
+  color: #1f2430;
+}
+
+.app-shell > .workspace-layout > .tab-content .panel::before {
+  background: rgba(143, 132, 156, 0.55);
+}
+
+.app-shell > .workspace-layout > .tab-content .panel :is(h1, h2, h3, h4, p, label, .hint, .status, .metric) {
+  color: #1f2430;
+}
+
+.admin-grid .loan-management-title {
+  color: #ad03fc;
 }
 
 .transfers-tab-desc {

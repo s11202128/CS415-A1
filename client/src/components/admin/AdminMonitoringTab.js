@@ -39,7 +39,7 @@ export default function AdminMonitoringTab({
 
   return (
     <section className="panel-grid">
-      <article className="panel wide">
+      <article className="panel wide monitoring-dashboard">
         <nav className="acct-tab-bar" style={{ marginBottom: "16px" }}>
           {VIEWS.map((view) => (
             <button

@@ -8,7 +8,7 @@ export default function AdminLoansTab({ loanApplications, onAdminUpdateLoanStatu
 
   return (
     <article className="panel wide">
-      <h3>Loan Application Management</h3>
+      <h3 className="loan-management-title">Loan Application Management</h3>
       <table>
         <thead>
           <tr>
