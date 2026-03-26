@@ -15,7 +15,7 @@ No mobile local database is introduced. Mobile accesses data only through secure
 - Android Compose screens and state rendering
 
 2. Business Logic Layer:
-- Backend services/controllers in `server/src/services` and `server/src/controllers`
+- Backend services/controllers in server/src/services and server/src/controllers
 - Android ViewModel orchestration for UI use-cases
 
 3. Data Access Layer:
@@ -24,7 +24,7 @@ No mobile local database is introduced. Mobile accesses data only through secure
 
 ### MVC/MVVM Mapping
 - Model:
-  - Backend models (`server/src/models`)
+  - Backend models (server/src/models)
   - Android domain/data models
 - View:
   - Android Compose UI
@@ -33,16 +33,11 @@ No mobile local database is introduced. Mobile accesses data only through secure
 
 ## Suggested Server Folder Structure
 
-```
 server/src/
   controllers/
     authController.js
-    transferController.js
-    accountController.js
   services/
     authService.js
-    transferService.js
-    accountService.js
   repositories/
     customerRepository.js
     accountRepository.js
@@ -53,11 +48,9 @@ server/src/
   models/
   middleware/
   utils/
-```
 
 ## Suggested Android Folder Structure
 
-```
 mobile-android/
   app/src/main/java/com/bof/mobile/
     data/
@@ -66,18 +59,22 @@ mobile-android/
         NetworkModule.kt
       repository/
         AuthRepository.kt
+        DashboardRepository.kt
     model/
       AuthModels.kt
+      DashboardModels.kt
       ApiResult.kt
     viewmodel/
       AuthViewModel.kt
+      DashboardViewModel.kt
     ui/
       auth/
         LoginScreen.kt
-```
+        RegisterScreen.kt
+      dashboard/
+        DashboardScreen.kt
 
 ## Step-by-Step Plan
-
 1. Backend refactor foundation
 - Keep behavior unchanged
 - Move auth route logic to controller/service
@@ -105,16 +102,11 @@ mobile-android/
 - staged release
 
 ## Commit Strategy
-
-1. `refactor(server): extract auth controller and service`
-2. `feat(api): secure and paginate transaction endpoint`
-3. `feat(api): add account details aggregate endpoint`
-4. `feat(android): scaffold native app architecture (mvvm)`
-5. `feat(android): implement auth ui + api integration`
-6. `feat(android): implement dashboard and account flows`
-7. `docs(api): add method-level JSDoc for controllers/services`
-
-## Notes
-- Reuse existing API base path: `/api`
-- Keep JWT auth flow unchanged initially
-- Use HTTPS in production and never connect mobile directly to MySQL
+1. refactor(server): extract auth controller and service
+2. feat(api): secure and paginate transaction endpoint
+3. feat(api): add account details aggregate endpoint
+4. feat(api): add recipient search and biller directory endpoints
+5. feat(android): scaffold native app architecture (mvvm)
+6. feat(android): implement auth ui + api integration
+7. feat(android): implement dashboard core flow
+8. docs(api): add method-level documentation

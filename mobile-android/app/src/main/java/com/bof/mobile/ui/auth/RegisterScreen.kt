@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.bof.mobile.viewmodel.AuthViewModel
 
 @Composable
-fun LoginScreen(viewModel: AuthViewModel, onOpenRegister: () -> Unit = {}) {
+fun RegisterScreen(viewModel: AuthViewModel, onBackToLogin: () -> Unit = {}) {
     val uiState by viewModel.uiState.collectAsState()
 
     Column(
@@ -29,43 +29,37 @@ fun LoginScreen(viewModel: AuthViewModel, onOpenRegister: () -> Unit = {}) {
             .padding(24.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = "Bank of Fiji", style = MaterialTheme.typography.headlineMedium)
+        Text(text = "Register", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = uiState.email,
-            onValueChange = viewModel::onEmailChanged,
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedTextField(
-            value = uiState.password,
-            onValueChange = viewModel::onPasswordChanged,
-            label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth()
-        )
+        OutlinedTextField(value = uiState.fullName, onValueChange = viewModel::onFullNameChanged, label = { Text("Full name") }, modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(value = uiState.mobile, onValueChange = viewModel::onMobileChanged, label = { Text("Mobile") }, modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(value = uiState.email, onValueChange = viewModel::onEmailChanged, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(value = uiState.password, onValueChange = viewModel::onPasswordChanged, label = { Text("Password") }, modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(value = uiState.confirmPassword, onValueChange = viewModel::onConfirmPasswordChanged, label = { Text("Confirm password") }, modifier = Modifier.fillMaxWidth())
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = viewModel::login,
+            onClick = viewModel::register,
             enabled = !uiState.isLoading,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Login")
+            Text("Submit registration")
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Button(
-            onClick = onOpenRegister,
+            onClick = onBackToLogin,
             enabled = !uiState.isLoading,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Create account")
+            Text("Back to login")
         }
 
         if (uiState.isLoading) {
@@ -73,12 +67,14 @@ fun LoginScreen(viewModel: AuthViewModel, onOpenRegister: () -> Unit = {}) {
             CircularProgressIndicator()
         }
 
+        if (!uiState.registrationSuccessMessage.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(text = uiState.registrationSuccessMessage ?: "", color = MaterialTheme.colorScheme.primary)
+        }
+
         if (!uiState.errorMessage.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = uiState.errorMessage ?: "",
-                color = MaterialTheme.colorScheme.error
-            )
+            Text(text = uiState.errorMessage ?: "", color = MaterialTheme.colorScheme.error)
         }
     }
 }

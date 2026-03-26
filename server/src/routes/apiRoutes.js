@@ -40,7 +40,8 @@ const asyncHandler = (fn) => async (req, res) => {
   try {
     await fn(req, res);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    const statusCode = Number(error?.statusCode) || 400;
+    res.status(statusCode).json({ error: error.message });
   }
 };
 
@@ -668,12 +669,12 @@ router.get("/transactions", requireAuth, asyncHandler(async (req, res) => {
 }));
 
 router.get("/accounts/:id/details", requireAuth, asyncHandler(async (req, res) => {
-  const accountId = Number(req.params.id);
-  if (!Number.isFinite(accountId) || accountId <= 0) {
+  const accountIdNumeric = Number(req.params.id);
+  if (!Number.isFinite(accountIdNumeric) || accountIdNumeric <= 0) {
     return res.status(400).json({ error: "Valid account id is required" });
   }
 
-  const account = await Account.findByPk(accountId, {
+  const account = await Account.findByPk(accountIdNumeric, {
     include: [{ model: Customer, attributes: ["id", "fullName"] }],
   });
   if (!account) {
@@ -699,6 +700,48 @@ router.get("/accounts/:id/details", requireAuth, asyncHandler(async (req, res) =
     },
     transactions,
   });
+}));
+
+router.get("/recipients/search", requireAuth, asyncHandler(async (req, res) => {
+  const q = String(req.query.q || "").trim();
+  if (q.length < 3) {
+    return res.status(400).json({ error: "Query must be at least 3 characters" });
+  }
+
+  const rows = await Account.findAll({
+    where: {
+      [Op.or]: [
+        { accountNumber: { [Op.like]: `%${q}%` } },
+        { accountHolder: { [Op.like]: `%${q}%` } },
+      ],
+      status: "active",
+    },
+    include: [{ model: Customer, attributes: ["id", "fullName"] }],
+    limit: 25,
+    order: [["createdAt", "DESC"]],
+  });
+
+  const requesterCustomerId = getAuthenticatedCustomerId(req);
+  const filteredRows = isAdmin(req)
+    ? rows
+    : rows.filter((row) => Number(row.customerId) !== Number(requesterCustomerId));
+
+  return res.json(filteredRows.map((row) => ({
+    accountId: row.id,
+    accountNumber: row.accountNumber,
+    accountHolder: row.accountHolder || row.Customer?.fullName || "",
+    customerId: row.customerId,
+  })));
+}));
+
+router.get("/billers", requireAuth, asyncHandler(async (req, res) => {
+  res.json([
+    { code: "EFL", name: "Energy Fiji Limited" },
+    { code: "WAF", name: "Water Authority Fiji" },
+    { code: "DIGI", name: "Digicel Fiji" },
+    { code: "VODA", name: "Vodafone Fiji" },
+    { code: "RATES", name: "Municipal Rates" },
+  ]);
 }));
 
 router.post("/transfers/validate-destination", requireAuth, asyncHandler(async (req, res) => {

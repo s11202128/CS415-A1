@@ -10,10 +10,18 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class AuthUiState(
+    val fullName: String = "",
+    val mobile: String = "",
     val email: String = "",
     val password: String = "",
+    val confirmPassword: String = "",
+    val token: String? = null,
+    val userId: Int? = null,
+    val customerId: Int? = null,
+    val isAdmin: Boolean = false,
     val isLoading: Boolean = false,
     val isLoggedIn: Boolean = false,
+    val registrationSuccessMessage: String? = null,
     val errorMessage: String? = null
 )
 
@@ -22,13 +30,13 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState
 
-    fun onEmailChanged(value: String) {
-        _uiState.update { it.copy(email = value) }
-    }
+    fun onFullNameChanged(value: String) = _uiState.update { it.copy(fullName = value) }
+    fun onMobileChanged(value: String) = _uiState.update { it.copy(mobile = value) }
+    fun onEmailChanged(value: String) = _uiState.update { it.copy(email = value) }
+    fun onPasswordChanged(value: String) = _uiState.update { it.copy(password = value) }
+    fun onConfirmPasswordChanged(value: String) = _uiState.update { it.copy(confirmPassword = value) }
 
-    fun onPasswordChanged(value: String) {
-        _uiState.update { it.copy(password = value) }
-    }
+    fun clearMessages() = _uiState.update { it.copy(errorMessage = null, registrationSuccessMessage = null) }
 
     fun login() {
         val current = _uiState.value
@@ -42,7 +50,20 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
             when (val result = authRepository.login(current.email, current.password)) {
                 is ApiResult.Success -> {
-                    _uiState.update { it.copy(isLoading = false, isLoggedIn = true, errorMessage = null) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isLoggedIn = true,
+                            token = result.data.token,
+                            userId = result.data.userId,
+                            customerId = result.data.customerId,
+                            fullName = result.data.fullName,
+                            email = result.data.email,
+                            mobile = result.data.mobile ?: it.mobile,
+                            isAdmin = result.data.isAdmin,
+                            errorMessage = null
+                        )
+                    }
                 }
                 is ApiResult.Error -> {
                     _uiState.update {
@@ -54,6 +75,60 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                     }
                 }
             }
+        }
+    }
+
+    fun register() {
+        val current = _uiState.value
+        if (current.fullName.isBlank() || current.mobile.isBlank() || current.email.isBlank() || current.password.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "All registration fields are required") }
+            return
+        }
+        if (current.password != current.confirmPassword) {
+            _uiState.update { it.copy(errorMessage = "Passwords do not match") }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null, registrationSuccessMessage = null) }
+
+            when (
+                val result = authRepository.register(
+                    fullName = current.fullName,
+                    mobile = current.mobile,
+                    email = current.email,
+                    password = current.password,
+                    confirmPassword = current.confirmPassword
+                )
+            ) {
+                is ApiResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            registrationSuccessMessage = result.data,
+                            errorMessage = null
+                        )
+                    }
+                }
+                is ApiResult.Error -> {
+                    _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
+                }
+            }
+        }
+    }
+
+    fun logout() {
+        _uiState.update {
+            it.copy(
+                token = null,
+                userId = null,
+                customerId = null,
+                isAdmin = false,
+                isLoggedIn = false,
+                password = "",
+                confirmPassword = "",
+                errorMessage = null
+            )
         }
     }
 }

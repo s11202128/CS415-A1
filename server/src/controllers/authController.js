@@ -27,63 +27,68 @@ function buildAuthResponse(user) {
   };
 }
 
-function handleError(res, err, fallbackStatus) {
-  const status = Number(err?.statusCode) || fallbackStatus;
-  return res.status(status).json({ error: err.message });
-}
-
 /**
- * Controller methods for auth endpoints.
- * Keeps HTTP concerns separated from service/business logic.
+ * Auth HTTP controller layer.
+ * Handles request/response mapping and delegates business rules to authService.
  */
 const authController = {
+  /**
+   * Register endpoint handler.
+   * @param {import('express').Request} req Express request
+   * @param {import('express').Response} res Express response
+   * @returns {Promise<void>}
+   */
   async register(req, res) {
-    try {
-      const result = await authService.register(req.body || {});
-      return res.status(201).json(result);
-    } catch (err) {
-      return handleError(res, err, 400);
-    }
+    const result = await authService.register(req.body || {});
+    res.status(201).json(result);
   },
 
+  /**
+   * Login endpoint handler.
+   * @param {import('express').Request} req Express request
+   * @param {import('express').Response} res Express response
+   * @returns {Promise<void>}
+   */
   async login(req, res) {
-    try {
-      const user = await authService.login({
-        ...(req.body || {}),
-        ipAddress: req.ip,
-        userAgent: req.get("user-agent") || "",
-      });
-      return res.json(buildAuthResponse(user));
-    } catch (err) {
-      return handleError(res, err, 401);
-    }
+    const user = await authService.login({
+      ...(req.body || {}),
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent") || "",
+    });
+    res.json(buildAuthResponse(user));
   },
 
+  /**
+   * Forgot password endpoint handler.
+   * @param {import('express').Request} req Express request
+   * @param {import('express').Response} res Express response
+   * @returns {Promise<void>}
+   */
   async forgotPassword(req, res) {
-    try {
-      const result = await authService.forgotPassword(req.body || {});
-      return res.json(result);
-    } catch (err) {
-      return handleError(res, err, 400);
-    }
+    const result = await authService.forgotPassword(req.body || {});
+    res.json(result);
   },
 
+  /**
+   * Reset password endpoint handler.
+   * @param {import('express').Request} req Express request
+   * @param {import('express').Response} res Express response
+   * @returns {Promise<void>}
+   */
   async resetPassword(req, res) {
-    try {
-      const result = await authService.resetPassword(req.body || {});
-      return res.json(result);
-    } catch (err) {
-      return handleError(res, err, 400);
-    }
+    const result = await authService.resetPassword(req.body || {});
+    res.json(result);
   },
 
+  /**
+   * Admin credential verification endpoint handler.
+   * @param {import('express').Request} req Express request
+   * @param {import('express').Response} res Express response
+   * @returns {Promise<void>}
+   */
   async verifyAdmin(req, res) {
-    try {
-      const result = await authService.verifyAdmin(req.body || {});
-      return res.json(result);
-    } catch (err) {
-      return handleError(res, err, 401);
-    }
+    const result = await authService.verifyAdmin(req.body || {});
+    res.json(result);
   },
 };
 

@@ -7,12 +7,12 @@ const {
 } = require("../store-mysql");
 
 /**
- * Auth service orchestrates authentication and profile-security operations.
- * This keeps route handlers thin while reusing existing store logic.
+ * Authentication business service.
+ * Delegates to existing domain logic in store-mysql while keeping route handlers thin.
  */
 const authService = {
   /**
-   * Register a new customer.
+   * Register a new customer account.
    * @param {Object} payload Registration payload
    * @returns {Promise<Object>} Registration result
    */
@@ -21,37 +21,35 @@ const authService = {
   },
 
   /**
-   * Login a user (customer or admin).
+   * Authenticate a customer/admin.
    * @param {Object} payload Login payload
-   * @param {string|null} payload.ipAddress Request source IP
-   * @param {string|null} payload.userAgent Request User-Agent
-   * @returns {Promise<Object>} Authenticated user profile
+   * @returns {Promise<Object>} Authenticated profile
    */
   login(payload) {
     return loginUser(payload || {});
   },
 
   /**
-   * Verify admin lock screen credentials.
-   * @param {Object} payload Admin credentials
-   * @returns {Promise<Object>} Verification response
+   * Verify admin credentials for lock screen access.
+   * @param {Object} payload Admin credential payload
+   * @returns {Promise<Object>} Verification result
    */
   verifyAdmin(payload) {
     return verifyAdminCredentials(payload || {});
   },
 
   /**
-   * Request OTP for password reset flow.
-   * @param {Object} payload Request payload with email
-   * @returns {Promise<Object>} Reset request metadata
+   * Initiate password reset via OTP.
+   * @param {Object} payload Reset request payload
+   * @returns {Promise<Object>} Reset initiation metadata
    */
   forgotPassword(payload) {
     return requestPasswordReset(payload || {});
   },
 
   /**
-   * Complete password reset using OTP.
-   * @param {Object} payload Reset payload
+   * Complete password reset with OTP verification.
+   * @param {Object} payload Reset confirmation payload
    * @returns {Promise<Object>} Reset status
    */
   resetPassword(payload) {

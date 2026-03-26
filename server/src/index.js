@@ -35,6 +35,7 @@ loadEnvFromFile();
 const authRoutes = require("./routes/authRoutes");
 const apiRoutes = require("./routes/apiRoutes");
 const initializeDatabase = require("./database");
+const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -81,10 +82,7 @@ app.use((req, res, next) => {
 app.use("/api", authRoutes);
 app.use("/api", apiRoutes);
 
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ error: "Internal server error" });
-});
+app.use(errorHandler);
 
 // Initialize database and start server
 initializeDatabase()

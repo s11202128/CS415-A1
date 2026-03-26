@@ -1,19 +1,26 @@
 const express = require("express");
 const authController = require("../controllers/authController");
+
 const router = express.Router();
 
-router.post("/auth/register", authController.register);
+const withStatus = (statusCode, handler) => async (req, res) => {
+  try {
+    await handler(req, res);
+  } catch (err) {
+    const resolvedStatus = Number(err?.statusCode) || statusCode;
+    res.status(resolvedStatus).json({ error: err.message });
+  }
+};
 
-router.post("/register", authController.register);
+router.post("/auth/register", withStatus(400, authController.register));
+router.post("/register", withStatus(400, authController.register));
 
-router.post("/auth/login", authController.login);
+router.post("/auth/login", withStatus(401, authController.login));
+router.post("/login", withStatus(401, authController.login));
 
-router.post("/login", authController.login);
+router.post("/auth/forgot-password", withStatus(400, authController.forgotPassword));
+router.post("/auth/reset-password", withStatus(400, authController.resetPassword));
 
-router.post("/auth/forgot-password", authController.forgotPassword);
-
-router.post("/auth/reset-password", authController.resetPassword);
-
-router.post("/auth/admin-verify", authController.verifyAdmin);
+router.post("/auth/admin-verify", withStatus(401, authController.verifyAdmin));
 
 module.exports = router;
